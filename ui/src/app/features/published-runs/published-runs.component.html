@@ -1,0 +1,58 @@
+<section class="section-block">
+  <div class="section-heading"><h2 class="section-title">Published runs</h2></div>
+  <div class="toolbar">
+    <span class="search"
+      ><i class="pi pi-search"></i
+      ><input
+        #query
+        pInputText
+        type="search"
+        placeholder="Search software…"
+        (input)="search(query.value)"
+    /></span>
+    <p-button
+      label="Compare"
+      icon="pi pi-chart-line"
+      [outlined]="true"
+      [disabled]="!canCompare"
+      [title]="compareHint"
+      (onClick)="compare()"
+    />
+    <p-button
+      label="Reload"
+      icon="pi pi-refresh"
+      [loading]="loading()"
+      (onClick)="refreshRequested.emit()"
+    />
+  </div>
+  <div class="summary">
+    <span>Updated {{ updated() }}</span>
+  </div>
+  <div class="grid-loading-wrapper">
+    <ag-grid-angular
+      class="runs-grid"
+      [rowData]="runs()"
+      [columnDefs]="columns"
+      [defaultColDef]="defaultColDef"
+      [pagination]="true"
+      [paginationPageSize]="10"
+      [paginationPageSizeSelector]="[10, 25, 50]"
+      [rowSelection]="{
+        mode: 'multiRow',
+        checkboxes: true,
+        headerCheckbox: true,
+        enableClickSelection: false,
+      }"
+      [selectionColumnDef]="{ width: 48, pinned: 'left', sortable: false, resizable: false }"
+      [getRowId]="getRowId"
+      (gridReady)="gridReady($event)"
+      (selectionChanged)="selectionChanged($event)"
+      (rowClicked)="openSingle($event)"
+    />
+    @if (loading()) {
+      <div class="grid-loading-overlay">
+        <p-progress-spinner strokeWidth="4" ariaLabel="Loading published runs" />
+      </div>
+    }
+  </div>
+</section>

@@ -1,0 +1,81 @@
+:host {
+  display: block;
+  color: var(--text);
+}
+.hero {
+  padding: 20px max(16px, calc((100% - 1200px) / 2));
+  background: var(--hero);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.brand-link,
+.brand-wordmark {
+  display: block;
+}
+.brand-wordmark {
+  width: 270px;
+  height: auto;
+}
+:host-context(.app-dark) .brand-wordmark {
+  filter: brightness(0) invert(1);
+}
+.ribbon-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 32px;
+}
+.product-name {
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+main {
+  max-width: 1200px;
+  margin: auto;
+  padding: 72px 24px 96px;
+}
+.state {
+  min-height: 180px;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  color: var(--muted);
+}
+.error {
+  color: var(--danger);
+}
+.theme-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+@media (max-width: 650px) {
+  .hero {
+    padding: 16px;
+  }
+  .brand-wordmark {
+    width: 200px;
+  }
+  .product-name {
+    display: none;
+  }
+  .theme-switch span {
+    display: none;
+  }
+  main {
+    padding-top: 48px;
+  }
+}

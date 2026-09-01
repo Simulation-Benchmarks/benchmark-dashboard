@@ -1,0 +1,7 @@
+fastapi
+pandas
+python-dotenv
+rdflib
+rohub
+semantic-benchmark
+uvicorn[standard]

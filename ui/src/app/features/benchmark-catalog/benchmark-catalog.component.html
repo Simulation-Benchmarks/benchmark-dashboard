@@ -1,0 +1,76 @@
+<section class="section-block">
+  <div class="section-heading">
+    <h2 class="section-title">Benchmarks</h2>
+  </div>
+  <div class="grid-loading-wrapper">
+    <ag-grid-angular
+      class="benchmark-grid"
+      [rowData]="benchmarks()"
+      [columnDefs]="columns"
+      [defaultColDef]="defaultColDef"
+      [rowSelection]="{
+        mode: 'singleRow',
+        checkboxes: true,
+        enableClickSelection: true,
+        enableSelectionWithoutKeys: true,
+      }"
+      [selectionColumnDef]="{ width: 48, pinned: 'left', sortable: false, resizable: false }"
+      [getRowId]="getRowId"
+      (rowDataUpdated)="selectFirstRow($event)"
+      (selectionChanged)="selectionChanged($event)"
+      domLayout="autoHeight"
+    />
+    @if (loading()) {
+      <div class="grid-loading-overlay">
+        <p-progress-spinner strokeWidth="4" ariaLabel="Loading benchmarks" />
+      </div>
+    }
+  </div>
+</section>
+
+<p-dialog
+  [(visible)]="metadataVisible"
+  [modal]="true"
+  [style]="{ width: 'min(760px, 94vw)' }"
+  [contentStyle]="{ height: 'min(520px, 70vh)', overflow: 'auto' }"
+>
+  <ng-template #header>
+    <div>
+      <span class="eyebrow">Benchmark metadata</span>
+      <h2>{{ metadataBenchmark?.benchmark || 'Benchmark metadata' }}</h2>
+    </div>
+  </ng-template>
+
+  @if (metadataBenchmark) {
+    <p-tabs value="parameters">
+      <p-tablist>
+        <p-tab value="parameters" class="parameter-tab">
+          Parameters ({{ metadataBenchmark.parameters.length }})
+        </p-tab>
+        <p-tab value="metrics" class="metric-tab">
+          Metrics ({{ metadataBenchmark.metrics.length }})
+        </p-tab>
+      </p-tablist>
+      <p-tabpanels>
+        <p-tabpanel value="parameters">
+          <ag-grid-angular
+            class="metadata-grid parameter-grid"
+            [rowData]="metadataBenchmark.parameters"
+            [columnDefs]="variableColumns"
+            [defaultColDef]="defaultColDef"
+            domLayout="autoHeight"
+          />
+        </p-tabpanel>
+        <p-tabpanel value="metrics">
+          <ag-grid-angular
+            class="metadata-grid metric-grid"
+            [rowData]="metadataBenchmark.metrics"
+            [columnDefs]="variableColumns"
+            [defaultColDef]="defaultColDef"
+            domLayout="autoHeight"
+          />
+        </p-tabpanel>
+      </p-tabpanels>
+    </p-tabs>
+  }
+</p-dialog>

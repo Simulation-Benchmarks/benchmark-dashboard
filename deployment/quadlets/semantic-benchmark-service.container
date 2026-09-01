@@ -1,0 +1,25 @@
+[Unit]
+Description=Semantic Benchmark Dashboard API
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=cr.tik.uni-stuttgart.de/izus-darus/semantic-benchmark/service:latest
+Pull=newer
+ContainerName=service
+Network=semantic-benchmark.network
+EnvironmentFile=/home/podman/benchmark-dashboard/semantic-benchmark.env
+PublishPort=127.0.0.1:9050:8000
+HealthCmd=python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"
+HealthInterval=30s
+HealthStartPeriod=10s
+HealthTimeout=5s
+HealthRetries=3
+
+[Service]
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=30s
+
+[Install]
+WantedBy=default.target

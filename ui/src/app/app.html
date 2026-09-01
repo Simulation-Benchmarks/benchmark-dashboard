@@ -1,0 +1,37 @@
+<header class="hero">
+  <a class="brand-link" href="https://nfdi4ing.de/" aria-label="Visit the NFDI4ING website">
+    <img class="brand-wordmark" src="assets/nfdi4ing.svg" alt="NFDI4ING" />
+  </a>
+  <div class="ribbon-actions">
+    <label class="theme-switch">
+      <i class="pi" [class.pi-sun]="!theme.dark()" [class.pi-moon]="theme.dark()"></i>
+      <p-toggleswitch
+        [ngModel]="theme.dark()"
+        (ngModelChange)="theme.setDark($event)"
+        ariaLabel="Toggle dark theme"
+      />
+    </label>
+  </div>
+</header>
+
+<main>
+  @if (error) {
+    <div class="state error">{{ error }}</div>
+  } @else {
+    <app-benchmark-catalog
+      [runs]="runs"
+      [loading]="loading"
+      (selectionChange)="selectBenchmark($event)"
+    />
+    <app-published-runs
+      [runs]="publishedRuns"
+      [loading]="loading"
+      [updated]="updated"
+      (refreshRequested)="load(true)"
+      (analysisRequested)="openAnalysis($event)"
+    />
+  }
+</main>
+
+<app-run-analysis-dialog />
+<app-sparql-log />

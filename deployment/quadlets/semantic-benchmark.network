@@ -1,0 +1,6 @@
+[Unit]
+Description=Semantic Benchmark Dashboard network
+
+[Network]
+NetworkName=semantic-benchmark
+

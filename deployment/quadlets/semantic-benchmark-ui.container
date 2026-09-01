@@ -1,0 +1,21 @@
+[Unit]
+Description=Semantic Benchmark Dashboard UI
+Requires=semantic-benchmark-service.service
+After=semantic-benchmark-service.service
+
+[Container]
+Image=cr.tik.uni-stuttgart.de/izus-darus/semantic-benchmark/ui:latest
+Pull=newer
+ContainerName=semantic-benchmark-ui
+Network=semantic-benchmark.network
+Environment=SERVICE_HOST=service
+Environment=SERVICE_PORT=8000
+PublishPort=127.0.0.1:9060:80
+
+[Service]
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=30s
+
+[Install]
+WantedBy=default.target
