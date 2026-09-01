@@ -1,82 +1,164 @@
 # Semantic Benchmark Dashboard
 
-A FastAPI backend and Angular/PrimeNG frontend that reproduce and extend the
-data flow in `joint-kg.ipynb`. The API
-also retains `software_url` so each displayed software name links to its zbMATH
-Open record. A benchmark catalog collects the GitHub and RoHub links above the
-runs table; the Open RO link points to the individual run resource.
-RoHub queries use the same `configure_rohub`, `query_sparql`, and
-`build_dynamic_query` functions from the `semantic-benchmark` package as the
-notebook. AG Grid provides filtering and multi-run selection, while Plotly
-provides interactive comparison plots.
+Semantic Benchmark Dashboard displays published benchmark runs from the
+production RoHub knowledge graph. It consists of:
 
-## Run locally
+- a FastAPI service that queries RoHub, loads benchmark metadata, resolves
+  software names through zbMATH Open, and exposes run values and a recent
+  SPARQL-query log; and
+- an Angular UI built with PrimeNG, AG Grid, and Plotly for browsing,
+  filtering, and comparing runs.
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
+The API caches the published-runs response for five minutes. Refreshing the
+data from the UI bypasses that cache.
 
-Install the UI dependencies, then start both the service and UI with one
-command from the repository root:
+## Configuration
 
-```bash
-npm --prefix ui install
-make dev
-```
-
-Open <http://localhost:4200>. Angular proxies `/api` calls to FastAPI on port
-8000. API documentation is at <http://localhost:8000/docs>.
-
-Results are cached for five minutes, while the page's Refresh button requests
-fresh upstream data.
-
-Create `app/.env`, then fill in your RoHub credentials:
+The service requires RoHub credentials to download benchmark metadata. Create
+`app/.env` with:
 
 ```dotenv
 ROHUB_USERNAME=your-rohub-username
 ROHUB_PASSWORD=your-rohub-password
 ```
 
-The `app/.env` configuration file is loaded for local development and excluded from
-Git. Runtime environment variables take precedence, so Podman's `--env-file`
-option can inject the same credentials into the service container. These
-credentials are used to download each benchmark's JSON-LD Annotation Collection;
-the catalog loads its benchmark name, parameters, metrics, and units with
-`semantic_benchmark.BenchmarkLoader`, following `joint-kg.ipynb`.
+`app/.env` is ignored by Git. Runtime environment variables take precedence,
+and containers can receive the same values with `--env-file app/.env`.
 
-## Container images
+The service also needs outbound HTTPS access to the production RoHub services
+and `api.zbmath.org`.
 
-The backend and UI are separate images. Build them from the repository root:
+## Local development
+
+Prerequisites:
+
+- Python 3.12 or later
+- Node.js and npm
+
+Create the Python environment and install both sets of dependencies:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+npm --prefix ui install
+```
+
+Start the API and Angular development server from the repository root:
+
+```bash
+make dev
+```
+
+The development services are available at:
+
+- UI: <http://localhost:4200>
+- API documentation: <http://localhost:8000/docs>
+- API health check: <http://localhost:8000/api/health>
+
+The Angular development server proxies `/api` to the API on port `8000`.
+Stopping `make dev` stops both processes.
+
+## Run with Podman
+
+On macOS, initialize and start the Podman virtual machine first if necessary:
+
+```bash
+podman machine init
+podman machine start
+```
+
+Build the API and UI images from the repository root:
 
 ```bash
 podman build -f Containerfile.service -t semantic-benchmark-service .
 podman build -f Containerfile.ui -t semantic-benchmark-ui .
 ```
 
-The UI's Nginx server proxies `/api` to `service:8000` by default. Override
-`SERVICE_HOST` and `SERVICE_PORT` when the backend uses a different DNS name or
-port. For example, run both images in one Podman network:
+Create a private network and start both containers:
 
 ```bash
 podman network create semantic-benchmark
-podman run -d --name service --network semantic-benchmark --env-file app/.env \
-  -p 8000:8000 semantic-benchmark-service
-podman run -d --name ui --network semantic-benchmark \
-  -p 8080:80 semantic-benchmark-ui
+
+podman run -d \
+  --name service \
+  --network semantic-benchmark \
+  --env-file app/.env \
+  -p 8000:8000 \
+  semantic-benchmark-service
+
+podman run -d \
+  --name ui \
+  --network semantic-benchmark \
+  -p 8080:80 \
+  semantic-benchmark-ui
 ```
 
-Open <http://localhost:8080>. The service needs outbound HTTPS access to the
-RoHub SPARQL endpoint and `api.zbmath.org`, plus the RoHub credentials described
-above.
+Open the UI at <http://localhost:8080> or the API documentation at
+<http://localhost:8000/docs>. The Nginx server in the UI container proxies
+`/api` to `service:8000` over the private network. Set `SERVICE_HOST` and
+`SERVICE_PORT` on the UI container to use a different backend address.
 
-## Test
+Inspect the running containers and their logs with:
 
 ```bash
-python -m unittest discover -s tests -v
-cd ui && npm run build
+podman ps
+podman logs service
+podman logs ui
 ```
 
-Before making the notebook or repository public, rotate the RoHub password that
-is currently stored in a notebook cell and remove it from Git history.
+After changing either `Containerfile` or application source, rebuild the
+images and recreate the containers:
+
+```bash
+podman stop ui service
+podman rm ui service
+
+podman build -f Containerfile.service -t semantic-benchmark-service .
+podman build -f Containerfile.ui -t semantic-benchmark-ui .
+```
+
+Then repeat the two `podman run` commands above. The existing network can be
+reused.
+
+To remove the local deployment completely:
+
+```bash
+podman stop ui service
+podman rm ui service
+podman network rm semantic-benchmark
+```
+
+## Deploy with Quadlets
+
+Rootless systemd Quadlets for the API, UI, and their private network are in
+`deployment/quadlets`. They use images from the Universität Stuttgart Harbor
+registry and run under the `podman` user. The deployment exposes only loopback
+ports:
+
+- UI: <http://127.0.0.1:9060>
+- API: <http://127.0.0.1:9050>
+
+See [deployment/quadlets/README.md](deployment/quadlets/README.md) for image
+publishing, credential setup, installation, and service-management commands.
+
+## API routes
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/health` | Service health check |
+| `GET` | `/api/runs` | Published runs; use `?refresh=true` to bypass the cache |
+| `GET` | `/api/run-values?run_id=...` | Parameter and metric values for a run |
+| `GET` | `/api/sparql-log` | Recent in-process SPARQL executions |
+| `DELETE` | `/api/sparql-log` | Clear the SPARQL execution log |
+
+The interactive OpenAPI documentation is available at `/docs`.
+
+## Build verification
+
+This repository does not currently include an automated backend test suite.
+Build the production UI with:
+
+```bash
+npm --prefix ui run build
+```
