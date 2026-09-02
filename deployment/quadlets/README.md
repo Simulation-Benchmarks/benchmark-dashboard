@@ -6,6 +6,7 @@ This deployment uses rootless Podman Quadlets to run the Semantic Benchmark Dash
 
 The Quadlet files are located at:
 
+```text
 ~/.config/containers/systemd/benchmark-dashboard/
 ├── semantic-benchmark-network.network
 ├── semantic-benchmark-service.container
