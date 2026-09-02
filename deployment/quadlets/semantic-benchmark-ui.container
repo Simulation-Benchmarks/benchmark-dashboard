@@ -9,7 +9,7 @@ Pull=newer
 ContainerName=semantic-benchmark-ui
 Network=semantic-benchmark.network
 Environment=SERVICE_HOST=service
-Environment=SERVICE_PORT=8000
+Environment=SERVICE_PORT=9000
 PublishPort=127.0.0.1:9060:80
 
 [Service]
