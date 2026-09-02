@@ -11,6 +11,7 @@ The Quadlet files are located at:
 ├── semantic-benchmark-network.network
 ├── semantic-benchmark-service.container
 └── semantic-benchmark-ui.container
+```
 
 The API environment file is:
 
