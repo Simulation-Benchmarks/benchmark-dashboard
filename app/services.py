@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import json
 import math
-import os
 import re
-import tempfile
 import time
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
@@ -171,68 +169,105 @@ def _software_names(
     )
 
 
-def _benchmark_uuid(benchmark_url: str) -> str:
-    """Return the research-object UUID from the URL used by RoHub."""
-    identifier = benchmark_url.rstrip("/").rsplit("/", 1)[-1]
-    if not re.fullmatch(
-        r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}",
-        identifier,
-    ):
-        raise UpstreamError(f"Invalid benchmark RoHub URL: {benchmark_url}")
-    return identifier
+def _benchmark_name(
+    benchmark_repo: str | None,
+    benchmark_url: str | None = None,
+) -> str:
+    """Derive the benchmark name used by semantic-benchmark provenance helpers."""
+    source = (benchmark_repo or benchmark_url or "").rstrip("/")
+    if not source:
+        raise UpstreamError("This benchmark does not have an identifier")
+
+    name = source.rsplit("/", 1)[-1]
+    if name.endswith(".git"):
+        name = name[:-4]
+    if not name:
+        raise UpstreamError(f"Could not determine a benchmark name from {source}")
+    return name
 
 
-def _benchmark_metadata(benchmark_url: str) -> dict[str, Any]:
-    """Download and load benchmark metadata with semantic-benchmark."""
-    username = os.getenv("ROHUB_USERNAME")
-    password = os.getenv("ROHUB_PASSWORD")
-    if not username or not password:
-        raise UpstreamError(
-            "ROHUB_USERNAME and ROHUB_PASSWORD are required to load benchmark metadata"
-        )
+@lru_cache(maxsize=64)
+def _benchmark_metadata(
+    benchmark_repo: str | None,
+    benchmark_url: str | None,
+) -> dict[str, Any]:
+    """Discover parameter and metric names lazily via provenance queries."""
+    from semantic_benchmark.rohub.provenance import (
+        configure_rohub,
+        discover_benchmark_fields,
+        fetch_benchmark_data,
+        find_annotated_ro_uuids,
+        find_benchmark_ro_uuids,
+        find_named_graphs_for_uuids,
+    )
 
-    from semantic_benchmark import BenchmarkLoader
-    from semantic_benchmark.rohub import download_benchmark_resources
-
-    identifier = _benchmark_uuid(benchmark_url)
+    benchmark_name = _benchmark_name(benchmark_repo, benchmark_url)
     try:
-        with tempfile.TemporaryDirectory(prefix="benchmark-metadata-") as directory:
-            destination = f"{directory}/{identifier}.json"
-            download_benchmark_resources(
-                identifier,
-                username=username,
-                password=password,
-                semantic_resource_filename=destination,
-                use_production_rohub=True,
+        configure_rohub(use_production_rohub=True)
+        frame = fetch_benchmark_data(
+            benchmark_name=benchmark_name,
+            code_repository_url=benchmark_repo,
+            use_production_rohub=True,
+        )
+        if benchmark_repo:
+            uuids = find_annotated_ro_uuids(
+                benchmark_name=benchmark_name,
+                code_repository_url=benchmark_repo,
             )
-            benchmark = BenchmarkLoader(destination).load()
-
-            def variable_metadata(variable) -> dict[str, str | None]:
-                return {
-                    "name": variable.label or variable.id,
-                    "unit": getattr(variable, "unit_iri", None) or variable.unit,
-                }
-            
-            parameters = [
-                variable_metadata(parameter)
-                for parameter in (
-                    benchmark.parameter_sets[0].parts
-                    if benchmark.parameter_sets
-                    else []
-                )
-            ]
-            metrics = [variable_metadata(metric) for metric in benchmark.evaluates]
-            return {
-                "benchmark": benchmark.label or benchmark.id,
-                "parameters": parameters,
-                "metrics": metrics,
-            }
-    except UpstreamError:
-        raise
+        else:
+            uuids = find_benchmark_ro_uuids(benchmark_name)
+        named_graphs = find_named_graphs_for_uuids(
+            uuids,
+            use_production_rohub=True,
+        )
+        parameters, metrics = discover_benchmark_fields(list(named_graphs.values()))
+        available_columns = {
+            str(column)
+            for column in frame.columns
+            if str(column) != "tool_name"
+        }
+        parameters = [name for name in parameters if name in available_columns]
+        metrics = [
+            name for name in metrics
+            if name in available_columns and name not in parameters
+        ]
+        return {
+            "benchmark": benchmark_name,
+            "parameters": [{"name": name, "unit": None} for name in parameters],
+            "metrics": [{"name": name, "unit": None} for name in metrics],
+        }
     except Exception as error:
         raise UpstreamError(
-            f"Could not load metadata for benchmark {identifier}"
+            f"Could not load metadata for benchmark {benchmark_name}"
         ) from error
+
+
+@lru_cache(maxsize=128)
+def _run_fields(graph: str) -> tuple[list[str], list[str]]:
+    from semantic_benchmark.rohub.provenance import (
+        configure_rohub,
+        discover_benchmark_fields,
+    )
+
+    try:
+        configure_rohub(use_production_rohub=True)
+        parameters, metrics = discover_benchmark_fields([graph])
+    except Exception as error:
+        raise UpstreamError(
+            "Could not discover parameters and metrics for this run"
+        ) from error
+
+    return (
+        [str(name) for name in parameters],
+        [str(name) for name in metrics],
+    )
+
+
+def _discover_run_fields(run: dict[str, Any]) -> tuple[list[str], list[str]]:
+    graph = run.get("graph")
+    if not graph:
+        raise UpstreamError("This run does not have a named graph")
+    return _run_fields(graph)
 
 
 def _dynamic_query(parameters: list[str], metrics: list[str], graph: str) -> str:
@@ -275,6 +310,12 @@ def query_run_values(run_id: str) -> dict[str, Any]:
     if not graph:
         raise UpstreamError("This run does not have a named graph")
     if not parameters or not metrics:
+        discovered_parameters, discovered_metrics = _discover_run_fields(run)
+        if not parameters:
+            parameters = discovered_parameters
+        if not metrics:
+            metrics = discovered_metrics
+    if not parameters or not metrics:
         raise UpstreamError("This run does not define both parameters and metrics")
 
     columns = [
@@ -293,6 +334,28 @@ def query_run_values(run_id: str) -> dict[str, Any]:
             for row in result_rows
         ],
     }
+
+
+def load_run_metadata(run_id: str) -> dict[str, Any]:
+    """Load parameter and metric metadata only when the UI requests it."""
+    run = next((item for item in load_runs() if item.get("run_id") == run_id), None)
+    if run is None:
+        raise RunNotFoundError(f"Published run not found: {run_id}")
+
+    return _benchmark_metadata(
+        run.get("benchmark_repo"),
+        run.get("benchmark_url"),
+    )
+
+
+def load_benchmark_metadata(benchmark_url: str) -> dict[str, Any]:
+    """Load parameter and metric metadata for one benchmark URL."""
+    run = next(
+        (item for item in load_runs() if item.get("benchmark_url") == benchmark_url),
+        None,
+    )
+    benchmark_repo = run.get("benchmark_repo") if run else None
+    return _benchmark_metadata(benchmark_repo, benchmark_url)
 
 
 def load_runs(*, force: bool = False) -> list[dict[str, Any]]:
@@ -317,11 +380,6 @@ def load_runs(*, force: bool = False) -> list[dict[str, Any]]:
         )
         names = _software_names(software_urls)
 
-        benchmark_urls = sorted(
-            {row["benchmark_url"] for row in rows if row.get("benchmark_url")}
-        )
-        benchmark_metadata = {url: _benchmark_metadata(url) for url in benchmark_urls}
-
         result = [
             {
                 "run_id": row.get("run_id"),
@@ -332,10 +390,9 @@ def load_runs(*, force: bool = False) -> list[dict[str, Any]]:
                 "software_url": row.get("software_url"),
                 "datePublished": row.get("datePublished"),
                 "version": row.get("version"),
-                **benchmark_metadata.get(
-                    row.get("benchmark_url"),
-                    {"benchmark": "", "parameters": [], "metrics": []},
-                ),
+                "benchmark": "",
+                "parameters": [],
+                "metrics": [],
             }
             for row in rows
         ]

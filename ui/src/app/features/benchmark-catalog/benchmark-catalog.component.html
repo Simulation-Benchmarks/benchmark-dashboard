@@ -37,11 +37,19 @@
   <ng-template #header>
     <div>
       <span class="eyebrow">Benchmark metadata</span>
-      <h2>{{ metadataBenchmark?.benchmark || 'Benchmark metadata' }}</h2>
+      <h2>{{ metadataTitle }}</h2>
     </div>
   </ng-template>
 
-  @if (metadataBenchmark) {
+  @if (metadataLoading) {
+    <div class="metadata-state">
+      <p-progress-spinner strokeWidth="4" ariaLabel="Loading benchmark metadata" />
+    </div>
+  } @else if (metadataError) {
+    <div class="metadata-state metadata-error">
+      {{ metadataError }}
+    </div>
+  } @else if (metadataBenchmark) {
     <p-tabs value="parameters">
       <p-tablist>
         <p-tab value="parameters" class="parameter-tab">

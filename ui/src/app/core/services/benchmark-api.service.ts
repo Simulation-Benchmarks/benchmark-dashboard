@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { Run, RunValues, SparqlEntry } from '../models/benchmark.models';
+import { BenchmarkMetadata, Run, RunValues, SparqlEntry } from '../models/benchmark.models';
 
 @Injectable({ providedIn: 'root' })
 export class BenchmarkApi {
@@ -16,6 +16,18 @@ export class BenchmarkApi {
   runValues(runId: string): Observable<RunValues> {
     return this.http.get<RunValues>('/api/run-values', {
       params: new HttpParams().set('run_id', runId),
+    });
+  }
+
+  runMetadata(runId: string): Observable<BenchmarkMetadata> {
+    return this.http.get<BenchmarkMetadata>('/api/run-metadata', {
+      params: new HttpParams().set('run_id', runId),
+    });
+  }
+
+  benchmarkMetadata(benchmarkUrl: string): Observable<BenchmarkMetadata> {
+    return this.http.get<BenchmarkMetadata>('/api/benchmark-metadata', {
+      params: new HttpParams().set('benchmark_url', benchmarkUrl),
     });
   }
 

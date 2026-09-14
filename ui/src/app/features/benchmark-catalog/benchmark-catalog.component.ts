@@ -10,7 +10,8 @@ import { DialogModule } from 'primeng/dialog';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { TabsModule } from 'primeng/tabs';
 
-import { BenchmarkVariable, Run } from '../../core/models/benchmark.models';
+import { BenchmarkMetadata, BenchmarkVariable, Run } from '../../core/models/benchmark.models';
+import { BenchmarkApi } from '../../core/services/benchmark-api.service';
 import { imageLink } from '../../shared/utils/grid-cell-renderers';
 import { resourceLabel } from '../../shared/utils/display-formatters';
 
@@ -22,12 +23,18 @@ import { resourceLabel } from '../../shared/utils/display-formatters';
   styleUrl: './benchmark-catalog.component.css',
 })
 export class BenchmarkCatalogComponent {
+  private readonly api = inject(BenchmarkApi);
   private readonly changeDetector = inject(ChangeDetectorRef);
+  private readonly metadataCache = new Map<string, BenchmarkMetadata>();
+  private metadataRequestId = 0;
   readonly runs = input.required<Run[]>();
   readonly loading = input(false);
   readonly selectionChange = output<Run | null>();
   metadataVisible = false;
-  metadataBenchmark?: Run;
+  metadataLoading = false;
+  metadataError = '';
+  metadataTitle = 'Benchmark metadata';
+  metadataBenchmark?: BenchmarkMetadata;
 
   readonly benchmarks = computed(() => [
     ...new Map(this.runs().map((run) => [run.benchmark_url || run.benchmark_repo, run])).values(),
@@ -130,11 +137,53 @@ export class BenchmarkCatalogComponent {
     button.innerHTML = '<i class="pi pi-list" aria-hidden="true"></i>';
     button.addEventListener('click', (event) => {
       event.stopPropagation();
-      this.metadataBenchmark = benchmark;
-      this.metadataVisible = true;
-      this.changeDetector.detectChanges();
+      this.openMetadata(benchmark);
     });
     return button;
+  }
+
+  private openMetadata(benchmark: Run): void {
+    const requestId = ++this.metadataRequestId;
+    const benchmarkUrl = benchmark.benchmark_url;
+    this.metadataTitle = benchmark.benchmark || resourceLabel(benchmark.benchmark_repo) || 'Benchmark metadata';
+    this.metadataVisible = true;
+    this.metadataError = '';
+    this.metadataBenchmark = undefined;
+
+    if (!benchmarkUrl) {
+      this.metadataLoading = false;
+      this.metadataError = 'This benchmark does not have a RoHub URL.';
+      this.changeDetector.detectChanges();
+      return;
+    }
+
+    const cached = this.metadataCache.get(benchmarkUrl);
+    if (cached) {
+      this.metadataLoading = false;
+      this.metadataBenchmark = cached;
+      this.metadataTitle = cached.benchmark || this.metadataTitle;
+      this.changeDetector.detectChanges();
+      return;
+    }
+
+    this.metadataLoading = true;
+    this.changeDetector.detectChanges();
+    this.api.benchmarkMetadata(benchmarkUrl).subscribe({
+      next: (metadata) => {
+        if (requestId !== this.metadataRequestId) return;
+        this.metadataCache.set(benchmarkUrl, metadata);
+        this.metadataBenchmark = metadata;
+        this.metadataTitle = metadata.benchmark || this.metadataTitle;
+        this.metadataLoading = false;
+        this.changeDetector.detectChanges();
+      },
+      error: (error) => {
+        if (requestId !== this.metadataRequestId) return;
+        this.metadataLoading = false;
+        this.metadataError = error.error?.detail || 'Benchmark metadata could not be loaded.';
+        this.changeDetector.detectChanges();
+      },
+    });
   }
 
   private unitLink(unit?: string | null): Node {

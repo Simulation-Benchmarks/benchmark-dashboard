@@ -12,6 +12,12 @@ export interface Run {
   metrics: BenchmarkVariable[];
 }
 
+export interface BenchmarkMetadata {
+  benchmark: string;
+  parameters: BenchmarkVariable[];
+  metrics: BenchmarkVariable[];
+}
+
 export interface BenchmarkVariable {
   name: string;
   unit: string | null;

@@ -3,6 +3,7 @@ import { forkJoin, map, Observable } from 'rxjs';
 
 import { Run, RunValues, ValueColumn } from '../../core/models/benchmark.models';
 import { BenchmarkApi } from '../../core/services/benchmark-api.service';
+import { resourceLabel } from '../../shared/utils/display-formatters';
 import { AnalysisRow, RunAnalysisData } from './run-analysis.models';
 
 @Injectable({ providedIn: 'root' })
@@ -16,6 +17,7 @@ export class RunAnalysisDataService {
   }
 
   private prepare(runs: Run[], responses: RunValues[]): RunAnalysisData {
+    const benchmarkLabel = runs[0]?.benchmark || resourceLabel(runs[0]?.benchmark_repo);
     const columns = responses[0].columns.filter((column) =>
       responses.every((response) =>
         response.columns.some((candidate) => candidate.key === column.key),
@@ -39,7 +41,7 @@ export class RunAnalysisDataService {
       rows,
       runCount: runs.length,
       payload: {
-        benchmark: responses[0].benchmark,
+        benchmark: benchmarkLabel,
         software_name: runs.length === 1 ? runs[0].software_name : null,
         run_count: runs.length,
         columns,
