@@ -23,6 +23,8 @@ load_dotenv(Path(__file__).resolve().parent / ".env", override=False)
 
 ZBMATH_API = "https://api.zbmath.org/v1/software"
 CACHE_SECONDS = 300
+SOFTWARE_LOOKUP_PATH = Path(__file__).resolve().parent / "software_lookup.json"
+SOFTWARE_NAME_SOURCE = "lookup"
 
 _cache: tuple[float, list[dict[str, Any]]] | None = None
 _cache_lock = Lock()
@@ -112,12 +114,61 @@ def _sparql(query: str) -> list[dict[str, str | None]]:
     return result
 
 
-def _software_name(url: str) -> str:
+def _software_slug(url: str) -> str:
+    return url.rstrip("/").rsplit("/", 1)[-1]
+
+
+def _software_identifier(url: str) -> str | None:
     match = re.search(r"/software/(\d+)(?:/)?$", url)
     if not match:
-        return url.rstrip("/").rsplit("/", 1)[-1]
-    payload = _fetch_json(f"{ZBMATH_API}/{match.group(1)}")
+        return None
+    return match.group(1)
+
+
+@lru_cache(maxsize=1)
+def _software_lookup() -> dict[str, str]:
+    try:
+        with SOFTWARE_LOOKUP_PATH.open() as handle:
+            payload = json.load(handle)
+    except FileNotFoundError:
+        return {}
+    except json.JSONDecodeError as error:
+        raise UpstreamError(
+            f"Could not parse software lookup data in {SOFTWARE_LOOKUP_PATH.name}"
+        ) from error
+    return {str(key): str(value) for key, value in payload.items()}
+
+
+def _software_name_from_api(url: str) -> str:
+    identifier = _software_identifier(url)
+    if not identifier:
+        return _software_slug(url)
+    payload = _fetch_json(f"{ZBMATH_API}/{identifier}")
     return payload["result"]["name"]
+
+
+def _software_name_from_lookup_then_api(url: str) -> str:
+    identifier = _software_identifier(url)
+    if not identifier:
+        return _software_slug(url)
+    lookup_name = _software_lookup().get(identifier)
+    if lookup_name:
+        return lookup_name
+    return _software_name_from_api(url)
+
+
+def _software_names(
+    urls: list[str], *, source: str = SOFTWARE_NAME_SOURCE
+) -> dict[str, str]:
+    if source == "api":
+        with ThreadPoolExecutor(max_workers=min(8, len(urls) or 1)) as pool:
+            return dict(zip(urls, pool.map(_software_name_from_api, urls)))
+    if source == "lookup":
+        with ThreadPoolExecutor(max_workers=min(8, len(urls) or 1)) as pool:
+            return dict(zip(urls, pool.map(_software_name_from_lookup_then_api, urls)))
+    raise UpstreamError(
+        "SOFTWARE_NAME_SOURCE must be either 'lookup' or 'api'"
+    )
 
 
 def _benchmark_uuid(benchmark_url: str) -> str:
@@ -264,8 +315,7 @@ def load_runs(*, force: bool = False) -> list[dict[str, Any]]:
         software_urls = sorted(
             {row["software_url"] for row in rows if row.get("software_url")}
         )
-        with ThreadPoolExecutor(max_workers=min(8, len(software_urls) or 1)) as pool:
-            names = dict(zip(software_urls, pool.map(_software_name, software_urls)))
+        names = _software_names(software_urls)
 
         benchmark_urls = sorted(
             {row["benchmark_url"] for row in rows if row.get("benchmark_url")}

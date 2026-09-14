@@ -28,6 +28,10 @@ and containers can receive the same values with `--env-file app/.env`.
 The service also needs outbound HTTPS access to the production RoHub services
 and `api.zbmath.org`.
 
+Software names are resolved from [`app/software_lookup.json`](app/software_lookup.json)
+by default, and fall back to the zbMATH API when an entry is missing. To use
+the zbMATH API-only resolver, set `SOFTWARE_NAME_SOURCE=api`.
+
 ## Local development
 
 Prerequisites:
