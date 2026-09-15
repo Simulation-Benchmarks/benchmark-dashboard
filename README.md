@@ -75,8 +75,8 @@ podman machine start
 Build the API and UI images from the repository root:
 
 ```bash
-podman build -f Containerfile.service -t semantic-benchmark-service .
-podman build -f Containerfile.ui -t semantic-benchmark-ui .
+podman build --pull -f Containerfile.service -t semantic-benchmark-service .
+podman build --pull -f Containerfile.ui -t semantic-benchmark-ui .
 ```
 
 Create a private network and start both containers:
@@ -118,8 +118,8 @@ images and recreate the containers:
 podman stop ui service
 podman rm ui service
 
-podman build -f Containerfile.service -t semantic-benchmark-service .
-podman build -f Containerfile.ui -t semantic-benchmark-ui .
+podman build --pull -f Containerfile.service -t semantic-benchmark-service .
+podman build --pull -f Containerfile.ui -t semantic-benchmark-ui .
 ```
 
 Then repeat the two `podman run` commands above. The existing network can be
