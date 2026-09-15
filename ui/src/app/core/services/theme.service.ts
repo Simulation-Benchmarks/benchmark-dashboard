@@ -46,7 +46,7 @@ export class ThemeService {
 
   private initialPreference(): boolean {
     const saved = localStorage.getItem('benchmark-theme');
-    return saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return saved ? saved === 'dark' : false;
   }
 
   private apply(dark: boolean): void {
