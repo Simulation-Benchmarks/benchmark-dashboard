@@ -1,12 +1,14 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { catchError, Observable, shareReplay, throwError } from 'rxjs';
 
 import { BenchmarkMetadata, Run, RunValues, SparqlEntry } from '../models/benchmark.models';
 
 @Injectable({ providedIn: 'root' })
 export class BenchmarkApi {
   private readonly http = inject(HttpClient);
+  private readonly runMetadataCache = new Map<string, Observable<BenchmarkMetadata>>();
+  private readonly benchmarkMetadataCache = new Map<string, Observable<BenchmarkMetadata>>();
 
   runs(refresh = false): Observable<{ items: Run[]; count: number }> {
     const params = refresh ? new HttpParams().set('refresh', true) : undefined;
@@ -20,15 +22,41 @@ export class BenchmarkApi {
   }
 
   runMetadata(runId: string): Observable<BenchmarkMetadata> {
-    return this.http.get<BenchmarkMetadata>('/api/run-metadata', {
-      params: new HttpParams().set('run_id', runId),
-    });
+    const cached = this.runMetadataCache.get(runId);
+    if (cached) return cached;
+
+    const request = this.http
+      .get<BenchmarkMetadata>('/api/run-metadata', {
+        params: new HttpParams().set('run_id', runId),
+      })
+      .pipe(
+        shareReplay(1),
+        catchError((error) => {
+          this.runMetadataCache.delete(runId);
+          return throwError(() => error);
+        }),
+      );
+    this.runMetadataCache.set(runId, request);
+    return request;
   }
 
   benchmarkMetadata(benchmarkUrl: string): Observable<BenchmarkMetadata> {
-    return this.http.get<BenchmarkMetadata>('/api/benchmark-metadata', {
-      params: new HttpParams().set('benchmark_url', benchmarkUrl),
-    });
+    const cached = this.benchmarkMetadataCache.get(benchmarkUrl);
+    if (cached) return cached;
+
+    const request = this.http
+      .get<BenchmarkMetadata>('/api/benchmark-metadata', {
+        params: new HttpParams().set('benchmark_url', benchmarkUrl),
+      })
+      .pipe(
+        shareReplay(1),
+        catchError((error) => {
+          this.benchmarkMetadataCache.delete(benchmarkUrl);
+          return throwError(() => error);
+        }),
+      );
+    this.benchmarkMetadataCache.set(benchmarkUrl, request);
+    return request;
   }
 
   sparqlLog(): Observable<{ items: SparqlEntry[]; count: number }> {

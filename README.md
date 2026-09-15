@@ -153,6 +153,8 @@ publishing, credential setup, installation, and service-management commands.
 | `GET` | `/api/health` | Service health check |
 | `GET` | `/api/runs` | Published runs; use `?refresh=true` to bypass the cache |
 | `GET` | `/api/run-values?run_id=...` | Parameter and metric values for a run |
+| `GET` | `/api/run-metadata?run_id=...` | Lazy-load parsed benchmark metadata for a run |
+| `GET` | `/api/benchmark-metadata?benchmark_url=...` | Lazy-load parsed benchmark metadata for a benchmark |
 | `GET` | `/api/sparql-log` | Recent in-process SPARQL executions |
 | `DELETE` | `/api/sparql-log` | Clear the SPARQL execution log |
 
