@@ -17,12 +17,12 @@ export class ThemeService {
   readonly colors = computed<ThemeColors>(() =>
     this.dark()
       ? {
-          surface: '#0d1938',
-          plot: '#07112d',
-          text: '#ffffff',
-          muted: '#c9cee0',
-          line: '#334061',
-          accent: '#8aaed8',
+          surface: '#21242a',
+          plot: '#17191d',
+          text: '#f4f5f7',
+          muted: '#b4bac4',
+          line: '#3c414b',
+          accent: '#c8ced8',
         }
       : {
           surface: '#ffffff',

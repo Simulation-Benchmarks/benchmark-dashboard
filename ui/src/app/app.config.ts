@@ -31,10 +31,10 @@ const Nfdi4Ing = definePreset(Aura, {
       },
       dark: {
         primary: {
-          color: '#8aaed8',
-          contrastColor: '#000e52',
-          hoverColor: '#0da5de',
-          activeColor: '#b6cce6',
+          color: '#c8ced8',
+          contrastColor: '#17191d',
+          hoverColor: '#e2e6ec',
+          activeColor: '#d5dbe3',
         },
       },
     },

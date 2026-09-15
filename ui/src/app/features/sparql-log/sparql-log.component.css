@@ -35,6 +35,28 @@ small {
   border-bottom: 1px solid var(--line);
 }
 
+.endpoint-notice {
+  margin: 0 0 1rem;
+  padding: 0.8rem 0.9rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  background: var(--soft);
+  border-left: 3px solid var(--accent);
+}
+
+.endpoint-notice a {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.endpoint-notice a:hover,
+.endpoint-notice a:focus-visible {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
 .log-entry {
   margin-bottom: 0.75rem;
   border: 1px solid var(--line);

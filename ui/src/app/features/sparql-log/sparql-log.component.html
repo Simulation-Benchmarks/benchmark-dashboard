@@ -34,6 +34,17 @@
     />
   </div>
 
+  <p class="endpoint-notice">
+    Run copied queries directly on the RoHub SPARQL endpoint:
+    <a
+      href="https://virtuoso-rohub2020-production.apps.bst2.paas.psnc.pl/sparql"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      virtuoso-rohub2020-production.apps.bst2.paas.psnc.pl/sparql
+    </a>
+  </p>
+
   @if (error) {
     <p class="error state">{{ error }}</p>
   } @else if (!entries.length) {

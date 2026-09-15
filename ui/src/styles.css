@@ -56,28 +56,28 @@
 
 .app-dark {
   color-scheme: dark;
-  --app-bg: #07112d;
-  --surface: #0d1938;
-  --text: #ffffff;
-  --muted: #c9cee0;
-  --line: #334061;
-  --accent: #8aaed8;
-  --accent-hover: #0da5de;
-  --accent-contrast: #000e52;
-  --soft: #162449;
-  --hero: #0d1938;
+  --app-bg: #17191d;
+  --surface: #21242a;
+  --text: #f4f5f7;
+  --muted: #b4bac4;
+  --line: #3c414b;
+  --accent: #c8ced8;
+  --accent-hover: #e2e6ec;
+  --accent-contrast: #17191d;
+  --soft: #2a2f37;
+  --hero: #21242a;
   --danger: #ff9a91;
-  --danger-soft: #492124;
+  --danger-soft: #4a2628;
   --warning: #ffdb78;
-  --warning-soft: #423718;
+  --warning-soft: #49401f;
   --success: #8bd4a9;
-  --success-soft: #173b2a;
-  --parameter: #8aaed8;
-  --parameter-soft: #173153;
-  --parameter-cell: #112743;
-  --metric: #d69cdd;
-  --metric-soft: #3b2145;
-  --metric-cell: #2d1c38;
+  --success-soft: #233a2d;
+  --parameter: #c8ced8;
+  --parameter-soft: #313744;
+  --parameter-cell: #2a303a;
+  --metric: #d7bdd9;
+  --metric-soft: #44364a;
+  --metric-cell: #382d3d;
 }
 
 * {
