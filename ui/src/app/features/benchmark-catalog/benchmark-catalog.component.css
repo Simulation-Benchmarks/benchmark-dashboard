@@ -46,12 +46,16 @@ h2 {
 }
 .benchmark-grid {
   width: 100%;
+  --ag-auto-height-min-body-height: 0px;
   border: 1px solid var(--text);
   border-radius: 0;
   overflow: hidden;
 }
 .grid-loading-wrapper {
   position: relative;
+}
+
+.grid-loading-wrapper.is-loading {
   min-height: 120px;
 }
 .grid-loading-overlay {

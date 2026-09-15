@@ -48,6 +48,7 @@
       (gridReady)="gridReady($event)"
       (selectionChanged)="selectionChanged($event)"
       (rowClicked)="openSingle($event)"
+      domLayout="autoHeight"
     />
     @if (loading()) {
       <div class="grid-loading-overlay">
