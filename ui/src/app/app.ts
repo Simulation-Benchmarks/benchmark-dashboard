@@ -7,6 +7,7 @@ import { Run } from './core/models/benchmark.models';
 import { BenchmarkApi } from './core/services/benchmark-api.service';
 import { ThemeService } from './core/services/theme.service';
 import { BenchmarkCatalogComponent } from './features/benchmark-catalog/benchmark-catalog.component';
+import { HelpComponent } from './features/help/help.component';
 import { PublishedRunsComponent } from './features/published-runs/published-runs.component';
 import { RunAnalysisDialogComponent } from './features/run-analysis/run-analysis-dialog.component';
 import { SparqlLogComponent } from './features/sparql-log/sparql-log.component';
@@ -17,6 +18,7 @@ import { SparqlLogComponent } from './features/sparql-log/sparql-log.component';
   imports: [
     BenchmarkCatalogComponent,
     FormsModule,
+    HelpComponent,
     PublishedRunsComponent,
     RunAnalysisDialogComponent,
     SparqlLogComponent,

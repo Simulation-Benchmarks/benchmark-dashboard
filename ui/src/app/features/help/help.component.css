@@ -1,0 +1,257 @@
+:host {
+  display: block;
+}
+
+.help-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.help-link:hover,
+.help-link:focus-visible {
+  color: var(--accent);
+}
+
+h2 {
+  margin: 0.2rem 0;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+h3 {
+  margin: 0 0 0.9rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+h4 {
+  margin: 0 0 0.55rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+small {
+  color: var(--muted);
+}
+
+.eyebrow {
+  color: var(--text);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.help-section + .help-section {
+  margin-top: 1.6rem;
+}
+
+.intro p {
+  margin: 0;
+  max-width: 58rem;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.intro-actions {
+  margin-bottom: 1rem;
+}
+
+.help-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+
+.help-card {
+  padding: 1rem;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 92%, var(--soft));
+}
+
+.help-card p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.benchmark-card a,
+.resource-list a {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.benchmark-card a:hover,
+.benchmark-card a:focus-visible,
+.resource-list a:hover,
+.resource-list a:focus-visible {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+.resource-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.tour-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(10, 12, 16, 0.66);
+  animation: tour-overlay-in 180ms ease-out;
+}
+
+.tour-overlay.is-closing {
+  animation: tour-overlay-out 180ms ease-in forwards;
+}
+
+.tour-card {
+  position: fixed;
+  z-index: 1202;
+  padding: 1rem 1rem 0.9rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.24);
+  transform-origin: top center;
+  animation: tour-card-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.tour-card.is-closing {
+  animation: tour-card-out 180ms ease-in forwards;
+}
+
+.tour-close {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.tour-close:hover,
+.tour-close:focus-visible {
+  color: var(--accent);
+  background: var(--soft);
+}
+
+.tour-count {
+  margin-bottom: 0.45rem;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.tour-card p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.tour-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.tour-actions-right {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.tour-primary,
+.tour-secondary {
+  border: 1px solid var(--line);
+  padding: 0.65rem 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tour-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.tour-primary:hover,
+.tour-primary:focus-visible {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.tour-secondary {
+  background: transparent;
+  color: var(--text);
+}
+
+.tour-secondary:hover,
+.tour-secondary:focus-visible {
+  background: var(--soft);
+}
+
+.tour-secondary:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+@keyframes tour-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes tour-overlay-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes tour-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes tour-card-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.985);
+  }
+}

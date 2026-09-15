@@ -10,14 +10,16 @@
         placeholder="Search software…"
         (input)="search(query.value)"
     /></span>
-    <p-button
-      label="Compare"
-      icon="pi pi-chart-line"
-      [outlined]="true"
-      [disabled]="!canCompare"
-      [title]="compareHint"
-      (onClick)="compare()"
-    />
+    <span class="compare-trigger">
+      <p-button
+        label="Compare"
+        icon="pi pi-chart-line"
+        [outlined]="true"
+        [disabled]="!canCompare"
+        [title]="compareHint"
+        (onClick)="compare()"
+      />
+    </span>
     <p-button
       label="Reload"
       icon="pi pi-refresh"

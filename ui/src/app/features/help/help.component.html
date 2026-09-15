@@ -1,0 +1,128 @@
+<button class="help-link" type="button" (click)="open()">
+  <i class="pi pi-question-circle" aria-hidden="true"></i>
+  <span>Help</span>
+</button>
+
+<p-dialog
+  [(visible)]="visible"
+  [modal]="true"
+  [maximizable]="true"
+  [style]="{ width: 'min(960px, 94vw)' }"
+  [contentStyle]="{ height: 'min(760px, 82vh)', overflow: 'auto' }"
+>
+  <ng-template #header>
+    <div>
+      <h2>User guide</h2>
+    </div>
+  </ng-template>
+
+  <section class="help-section intro">
+    <div class="intro-actions">
+      <p-button
+        label="Start guided tour"
+        icon="pi pi-directions"
+        size="small"
+        (onClick)="startTour()"
+      />
+    </div>
+    <p>
+      This dashboard groups published simulation runs by benchmark, lets you inspect benchmark
+      metadata, and helps you compare runs from the same benchmark in one place.
+    </p>
+  </section>
+
+  <section class="help-section">
+    <h3>Using the dashboard</h3>
+    <div class="help-grid">
+      <article class="help-card">
+        <h4>1. Choose a benchmark</h4>
+        <p>
+          Use the top <strong>Benchmarks</strong> table to select a benchmark family. The lower
+          <strong>Published runs</strong> table updates to show only runs for the selected
+          benchmark.
+        </p>
+      </article>
+      <article class="help-card">
+        <h4>2. Inspect metadata</h4>
+        <p>
+          Click the metadata button in the benchmark table to load the benchmark definition and view
+          its parameter and metric names. Metadata is loaded on demand and reused after the first
+          request.
+        </p>
+      </article>
+      <article class="help-card">
+        <h4>3. Explore published runs</h4>
+        <p>
+          Search the runs table by software name, open RoHub or named-graph links, and reload the
+          published-run list when you want to bypass the API cache.
+        </p>
+      </article>
+      <article class="help-card">
+        <h4>4. Compare runs</h4>
+        <p>
+          Select at least two runs from the same benchmark and use <strong>Compare</strong> to open
+          the analysis dialog with shared parameters, metrics, tables, and plots.
+        </p>
+      </article>
+      <article class="help-card">
+        <h4>5. Review SPARQL activity</h4>
+        <p>
+          Open <strong>Logs</strong> to inspect the live SPARQL queries executed by the backend,
+          copy them, and run them directly on the RoHub SPARQL endpoint if needed.
+        </p>
+      </article>
+    </div>
+  </section>
+
+  <section class="help-section">
+    <h3>Explore the code and benchmarks on Github</h3>
+    <div class="resource-list">
+      <a href="https://github.com/Simulation-Benchmarks" target="_blank" rel="noopener noreferrer">
+        Simulation-Benchmarks
+      </a>
+    </div>
+  </section>
+</p-dialog>
+
+@if (tourVisible) {
+  <div class="tour-overlay" [class.is-closing]="tourClosing" (click)="closeTour()"></div>
+  <aside
+    #tourCard
+    class="tour-card"
+    [class.is-closing]="tourClosing"
+    [ngStyle]="tourCardStyle"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Guided tour"
+    (click)="$event.stopPropagation()"
+  >
+    <button
+      type="button"
+      class="tour-close"
+      aria-label="Close guided tour"
+      title="Close guided tour"
+      (click)="closeTour()"
+    >
+      <i class="pi pi-times" aria-hidden="true"></i>
+    </button>
+    <div class="tour-count">Step {{ tourStepIndex + 1 }} of {{ tourStepCount }}</div>
+    <h3>{{ currentTourStep.title }}</h3>
+    <p>{{ currentTourStep.description }}</p>
+    <div class="tour-actions">
+      <button
+        type="button"
+        class="tour-secondary"
+        [disabled]="!hasPreviousStep"
+        (click)="previousTourStep()"
+      >
+        Back
+      </button>
+      <div class="tour-actions-right">
+        <button type="button" class="tour-secondary" (click)="closeTour()">Close</button>
+        <button type="button" class="tour-primary" (click)="nextTourStep()">
+          {{ lastTourStep ? 'Finish' : 'Next' }}
+        </button>
+      </div>
+    </div>
+  </aside>
+}
