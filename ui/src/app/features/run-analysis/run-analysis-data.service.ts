@@ -18,11 +18,13 @@ export class RunAnalysisDataService {
 
   private prepare(runs: Run[], responses: RunValues[]): RunAnalysisData {
     const benchmarkLabel = runs[0]?.benchmark || resourceLabel(runs[0]?.benchmark_repo);
-    const columns = responses[0].columns.filter((column) =>
-      responses.every((response) =>
-        response.columns.some((candidate) => candidate.key === column.key),
-      ),
-    );
+    const columnsByKey = new Map<string, ValueColumn>();
+    for (const response of responses) {
+      for (const column of response.columns) {
+        if (!columnsByKey.has(column.key)) columnsByKey.set(column.key, column);
+      }
+    }
+    const columns = [...columnsByKey.values()];
     const rawRows = responses.flatMap((response, index) => {
       const run = runs[index];
       const shortRun =

@@ -13,9 +13,11 @@ from functools import lru_cache
 from pathlib import Path
 from threading import Lock
 from typing import Any
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from dotenv import load_dotenv
+from rdflib import Graph
 
 # Support a service-local .env file during development. Environment variables
 # supplied by the runtime (for example, Podman's --env-file) take precedence.
@@ -345,6 +347,46 @@ def load_benchmark_metadata(benchmark_url: str) -> dict[str, Any]:
     return _benchmark_metadata(benchmark_url)
 
 
+def _graph_has_content(url: str) -> bool:
+    """Follow the graph URL and require a nonempty Turtle document."""
+    request = Request(url, headers={"Accept": "text/turtle"})
+    try:
+        with urlopen(request, timeout=20) as response:
+            content = response.read()
+            resolved_url = response.geturl()
+    except HTTPError as error:
+        if error.code in (404, 410):
+            return False
+        raise UpstreamError(f"Could not validate named graph: {url}") from error
+    except (URLError, OSError) as error:
+        raise UpstreamError(f"Could not validate named graph: {url}") from error
+
+    if not content.strip():
+        return False
+    try:
+        graph = Graph().parse(data=content, format="turtle", publicID=resolved_url)
+    except Exception:
+        # Includes the upstream literal 'None', HTML, and malformed Turtle.
+        return False
+    return len(graph) > 0
+
+
+def _validated_graphs_by_run(
+    rows: list[dict[str, Any]],
+) -> dict[str, str]:
+    """Validate each distinct URL once and prefer valid graphs for each run."""
+    urls = sorted({row["graph"] for row in rows if row.get("graph")})
+    with ThreadPoolExecutor(max_workers=min(8, len(urls) or 1)) as pool:
+        valid_urls = {
+            url for url, valid in zip(urls, pool.map(_graph_has_content, urls)) if valid
+        }
+    result = {}
+    for row in rows:
+        if row.get("graph") in valid_urls:
+            result.setdefault(row["run_id"], row["graph"])
+    return result
+
+
 def load_runs(*, force: bool = False) -> list[dict[str, Any]]:
     """Reproduce the notebook dataframe immediately after software_url is dropped."""
     global _cache
@@ -360,7 +402,7 @@ def load_runs(*, force: bool = False) -> list[dict[str, Any]]:
         rows = _sparql(build_published_runs_query())
         run_ids = [row["run_id"] for row in rows if row.get("run_id")]
         graphs = _sparql(build_run_named_graphs_query(run_ids)) if run_ids else []
-        graph_by_run = {row["run_id"]: row.get("graph") for row in graphs}
+        graph_by_run = _validated_graphs_by_run(graphs)
 
         software_urls = sorted(
             {row["software_url"] for row in rows if row.get("software_url")}
@@ -374,6 +416,7 @@ def load_runs(*, force: bool = False) -> list[dict[str, Any]]:
                 "benchmark_repo": row.get("benchmark_repo"),
                 "branch_url": row.get("branch_url"),
                 "graph": graph_by_run.get(row.get("run_id")),
+                "graph_valid": row.get("run_id") in graph_by_run,
                 "software_name": names.get(row.get("software_url")),
                 "software_url": row.get("software_url"),
                 "datePublished": row.get("datePublished"),

@@ -4,6 +4,7 @@ export interface Run {
   benchmark_repo: string;
   branch_url: string | null;
   graph: string | null;
+  graph_valid: boolean;
   software_name: string | null;
   software_url: string | null;
   datePublished: string | null;

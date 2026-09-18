@@ -35,9 +35,10 @@ export class PublishedRunsComponent {
   readonly analysisRequested = output<Run[]>();
   readonly mainBranchOnly = signal(true);
   readonly visibleRuns = computed(() =>
-    this.mainBranchOnly()
-      ? this.runs().filter((run) => run.branch_url?.endsWith('/tree/main'))
-      : this.runs(),
+    this.runs().filter(
+      (run) =>
+        run.graph_valid && (!this.mainBranchOnly() || run.branch_url?.endsWith('/tree/main')),
+    ),
   );
 
   selectedRuns: Run[] = [];

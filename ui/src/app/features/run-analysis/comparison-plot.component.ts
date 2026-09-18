@@ -79,6 +79,11 @@ export class ComparisonPlotComponent implements OnChanges, OnDestroy {
     const xColumn = analysis.columns.find((column) => column.key === this.xKey);
     const yColumn = analysis.columns.find((column) => column.key === this.yKey);
     const pairs = this.rows()
+      .filter((row) =>
+        [row[this.xKey], row[this.yKey]].every(
+          (value) => value !== null && value !== undefined && value !== '',
+        ),
+      )
       .map((row) => ({
         x: Number(row[this.xKey]),
         y: Number(row[this.yKey]),

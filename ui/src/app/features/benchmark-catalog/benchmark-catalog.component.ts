@@ -145,7 +145,8 @@ export class BenchmarkCatalogComponent {
   private openMetadata(benchmark: Run): void {
     const requestId = ++this.metadataRequestId;
     const benchmarkUrl = benchmark.benchmark_url;
-    this.metadataTitle = benchmark.benchmark || resourceLabel(benchmark.benchmark_repo) || 'Benchmark metadata';
+    this.metadataTitle =
+      benchmark.benchmark || resourceLabel(benchmark.benchmark_repo) || 'Benchmark metadata';
     this.metadataVisible = true;
     this.metadataError = '';
     this.metadataBenchmark = undefined;
