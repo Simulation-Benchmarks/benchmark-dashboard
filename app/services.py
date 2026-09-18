@@ -207,6 +207,7 @@ def _benchmark_metadata(
                 identifier,
                 username=username,
                 password=password,
+                path=directory,
                 semantic_resource_filename=destination,
                 use_production_rohub=True,
             )
