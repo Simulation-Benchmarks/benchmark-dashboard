@@ -7,9 +7,20 @@
         #query
         pInputText
         type="search"
-        placeholder="Search software…"
+        placeholder="Search software or repository…"
+        aria-label="Search software or repository"
         (input)="search(query.value)"
     /></span>
+    <select
+      #branchFilter
+      class="branch-filter"
+      aria-label="Filter runs by branch"
+      [value]="mainBranchOnly() ? 'main' : 'all'"
+      (change)="mainBranchOnly.set(branchFilter.value === 'main')"
+    >
+      <option value="all">All runs</option>
+      <option value="main">Main branch only</option>
+    </select>
     <span class="compare-trigger">
       <p-button
         label="Compare"
@@ -33,7 +44,7 @@
   <div class="grid-loading-wrapper">
     <ag-grid-angular
       class="runs-grid"
-      [rowData]="runs()"
+      [rowData]="visibleRuns()"
       [columnDefs]="columns"
       [defaultColDef]="defaultColDef"
       [pagination]="true"

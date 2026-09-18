@@ -2,6 +2,7 @@ export interface Run {
   run_id: string;
   benchmark_url: string;
   benchmark_repo: string;
+  branch_url: string | null;
   graph: string | null;
   software_name: string | null;
   software_url: string | null;

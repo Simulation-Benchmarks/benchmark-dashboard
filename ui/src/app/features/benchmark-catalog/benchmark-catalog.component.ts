@@ -83,7 +83,7 @@ export class BenchmarkCatalogComponent {
       cellRenderer: (params: ICellRendererParams<Run>) => this.metadataButton(params.data),
     },
     {
-      headerName: 'GitHub',
+      headerName: 'Source',
       width: 95,
       sortable: false,
       cellClass: 'centered-column',

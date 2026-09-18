@@ -54,6 +54,14 @@ Start the API and Angular development server from the repository root:
 make dev
 ```
 
+If `.venv/bin/python` is missing, `make dev` creates `.venv` using `python3`
+and installs `requirements.txt`. To select another bootstrap interpreter, use
+`make dev BOOTSTRAP_PYTHON=python3.12`. An explicit `PYTHON` override uses your
+existing interpreter and skips automatic Python setup.
+
+If the local Angular CLI is missing, `make dev` installs the UI dependencies
+from the lockfile before starting either server.
+
 The development services are available at:
 
 - UI: <http://localhost:4200>

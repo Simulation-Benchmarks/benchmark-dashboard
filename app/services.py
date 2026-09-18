@@ -372,6 +372,7 @@ def load_runs(*, force: bool = False) -> list[dict[str, Any]]:
                 "run_id": row.get("run_id"),
                 "benchmark_url": row.get("benchmark_url"),
                 "benchmark_repo": row.get("benchmark_repo"),
+                "branch_url": row.get("branch_url"),
                 "graph": graph_by_run.get(row.get("run_id")),
                 "software_name": names.get(row.get("software_url")),
                 "software_url": row.get("software_url"),

@@ -45,6 +45,15 @@
   height: 100%;
   padding-left: 40px;
 }
+.branch-filter {
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--text);
+  border-radius: 0;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
 :host ::ng-deep .toolbar p-button,
 :host ::ng-deep .toolbar .p-button {
   display: flex;
@@ -94,6 +103,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 32px;
   height: 32px;
   border-radius: 0;
 }
@@ -102,7 +112,15 @@
 }
 :host ::ng-deep .grid-action-icon {
   display: block;
+  width: 24px;
+  height: 28px;
   object-fit: contain;
+}
+:host ::ng-deep .centered-column {
+  justify-content: center;
+}
+:host ::ng-deep .centered-column-header .ag-header-cell-label {
+  justify-content: center;
 }
 :host ::ng-deep .rohub-action {
   width: 70px;

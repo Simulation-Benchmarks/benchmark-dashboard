@@ -1,4 +1,4 @@
-import { Component, effect, input, output } from '@angular/core';
+import { Component, computed, effect, input, output, signal } from '@angular/core';
 import { AgGridAngular } from 'ag-grid-angular';
 import {
   ColDef,
@@ -33,6 +33,12 @@ export class PublishedRunsComponent {
   readonly updated = input('');
   readonly refreshRequested = output<void>();
   readonly analysisRequested = output<Run[]>();
+  readonly mainBranchOnly = signal(true);
+  readonly visibleRuns = computed(() =>
+    this.mainBranchOnly()
+      ? this.runs().filter((run) => run.branch_url?.endsWith('/tree/main'))
+      : this.runs(),
+  );
 
   selectedRuns: Run[] = [];
   private gridApi?: GridApi<Run>;
@@ -54,6 +60,25 @@ export class PublishedRunsComponent {
       valueFormatter: (params) => formatPublishedDate(params.value),
       tooltipValueGetter: (params) => formatPublishedDateTooltip(params.value),
       cellClass: 'published-date',
+    },
+    {
+      headerName: 'Source',
+      field: 'branch_url',
+      getQuickFilterText: (params) =>
+        [params.data?.branch_url, params.data?.benchmark_repo].filter(Boolean).join(' '),
+      width: 95,
+      sortable: false,
+      filter: false,
+      floatingFilter: false,
+      cellClass: 'centered-column',
+      headerClass: 'centered-column-header',
+      cellRenderer: (params: ICellRendererParams<Run>) =>
+        imageLink(
+          params.data?.branch_url,
+          'assets/github.svg',
+          'Open run GitHub repository',
+          'GitHub',
+        ),
     },
     {
       headerName: 'RoHub',
@@ -87,7 +112,7 @@ export class PublishedRunsComponent {
 
   constructor() {
     effect(() => {
-      this.runs();
+      this.visibleRuns();
       queueMicrotask(() => this.resetDetailGrid());
     });
   }
