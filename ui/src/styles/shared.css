@@ -1,0 +1,119 @@
+h2 {
+  margin: 0.2rem 0;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+small {
+  color: var(--muted);
+}
+
+.eyebrow {
+  color: var(--text);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.section-block {
+  margin-bottom: 72px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  margin: 0 0 24px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--text);
+}
+
+.section-heading span {
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.section-title {
+  margin: 0;
+  color: var(--text);
+  font-family: 'IBM Plex', Arial, sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+}
+
+.grid-loading-wrapper {
+  position: relative;
+  min-height: 120px;
+}
+
+.grid-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  backdrop-filter: blur(1px);
+  cursor: wait;
+}
+
+.benchmark-name {
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.grid-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 0;
+  color: var(--accent);
+}
+
+.grid-action:hover {
+  background: var(--soft);
+}
+
+.grid-action:is(.source-action, .rohub-action, .graph-action, .notebook-action):hover {
+  background: transparent;
+}
+
+.grid-action-icon {
+  display: block;
+  width: 22px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.github-icon {
+  font-size: 22px;
+}
+
+.graph-action .pi {
+  font-size: 20px;
+}
+
+.rohub-action {
+  width: 70px;
+}
+
+.rohub-action .grid-action-icon {
+  width: 64px;
+  height: 22px;
+}
+
+.centered-column {
+  justify-content: center;
+}
+
+.p-tabpanels {
+  padding: 1rem 0 0;
+}

@@ -6,7 +6,7 @@ production RoHub knowledge graph. It consists of:
 - a FastAPI service that queries RoHub, loads benchmark metadata and software
   details from each run's named graph, and exposes run values and a recent
   SPARQL-query log; and
-- an Angular UI built with PrimeNG, AG Grid, and Plotly for browsing,
+- a Vue 3 UI built with PrimeVue and Plotly for browsing,
   filtering, and comparing runs.
 
 The API caches the published-runs response for five minutes. Refreshing the
@@ -54,7 +54,7 @@ python -m pip install -r requirements.txt
 npm --prefix ui install
 ```
 
-Start the API and Angular development server from the repository root:
+Start the API and Vite development server from the repository root:
 
 ```bash
 make dev
@@ -65,7 +65,7 @@ and installs `requirements.txt`. To select another bootstrap interpreter, use
 `make dev BOOTSTRAP_PYTHON=python3.12`. An explicit `PYTHON` override uses your
 existing interpreter and skips automatic Python setup.
 
-If the local Angular CLI is missing, `make dev` installs the UI dependencies
+If Vite is missing, `make dev` installs the UI dependencies
 from the lockfile before starting either server.
 
 The development services are available at:
@@ -74,7 +74,7 @@ The development services are available at:
 - API documentation: <http://localhost:8000/docs>
 - API health check: <http://localhost:8000/api/health>
 
-The Angular development server proxies `/api` to the API on port `8000`.
+The Vite development server proxies `/api` to the API on port `8000`.
 Stopping `make dev` stops both processes.
 
 ## Run with Podman

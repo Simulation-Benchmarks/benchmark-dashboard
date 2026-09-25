@@ -16,6 +16,6 @@ ENV SERVICE_HOST=service \
     SERVICE_PORT=8000
 
 COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
-COPY --from=build /ui/dist/ui/browser /usr/share/nginx/html
+COPY --from=build /ui/dist /usr/share/nginx/html
 
 EXPOSE 80

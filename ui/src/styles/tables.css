@@ -1,0 +1,35 @@
+/* Shared PrimeVue table styling. */
+:is(.benchmark-grid, .runs-grid, .metadata-grid, .values-table) {
+  font-family: 'IBM Plex', Arial, sans-serif;
+  font-size: 16px;
+  border-radius: 0;
+}
+
+:is(.benchmark-grid, .runs-grid, .metadata-grid, .values-table) .p-datatable-thead > tr > th {
+  border-bottom: 2px solid var(--text);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+:is(.benchmark-grid, .runs-grid, .metadata-grid, .values-table) .p-datatable-tbody > tr > td {
+  border-bottom: 1px solid var(--line);
+}
+
+:is(.benchmark-grid, .runs-grid) .p-datatable-tbody > tr:nth-child(even):not(.p-datatable-row-group-header):not(.p-datatable-row-selected) {
+  background: color-mix(in srgb, var(--surface) 94%, var(--soft));
+}
+
+:is(.benchmark-grid, .runs-grid) .p-datatable-tbody > tr:not(.p-datatable-row-group-header):hover {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+:is(.benchmark-grid, .runs-grid) .p-datatable-tbody > tr.p-datatable-row-selected,
+:is(.benchmark-grid, .runs-grid) .p-datatable-tbody > tr.p-datatable-row-selected:hover {
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+  color: var(--text);
+}
+
+:is(.benchmark-grid, .runs-grid) .p-datatable-tbody > tr:not(.p-datatable-row-group-header):hover > td,
+:is(.benchmark-grid, .runs-grid) .p-datatable-tbody > tr.p-datatable-row-selected > td {
+  background: transparent;
+}

@@ -1,72 +1,16 @@
-# Ui
+# Benchmark dashboard UI
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.19.
+Vue 3 frontend using PrimeVue, Vite, and Plotly. The API is the FastAPI service in `../app`.
 
-## Development server
+From the repository root, run `make dev` to start both services. The UI is available at http://localhost:4200 and Vite proxies `/api` to http://127.0.0.1:8000.
 
-To start a local development server, run:
-
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Application structure
-
-The UI is organized by responsibility:
-
-- `src/app/core` contains application-wide models and services.
-- `src/app/shared` contains reusable grid setup, renderers, and formatting utilities.
-- `src/app/features/benchmark-catalog` owns benchmark selection.
-- `src/app/features/published-runs` owns run filtering, pagination, and comparison selection.
-- `src/app/features/run-analysis` separates data loading, the values grid, Plotly rendering, and dialog orchestration.
-- `src/app/features/sparql-log` contains the live query log.
-
-The root `App` component only loads the run collection and coordinates feature events. New domain behavior should live in the relevant feature rather than in the root component.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+To work on the UI alone:
 
 ```bash
-ng generate component component-name
+npm --prefix ui ci
+npm --prefix ui start
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Build the production assets with `npm --prefix ui run build`. Output is written to `ui/dist` and copied into the Nginx image by `Containerfile.ui`.
 
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+UI components live in `src/components`, with API and data helpers in `src/lib`. The stylesheet entry point is `src/styles.css`; `src/styles/base.css` holds theme and PrimeVue overrides, `src/styles/shared.css` and `src/styles/tables.css` hold reusable UI rules, and the remaining files in `src/styles` match their features.

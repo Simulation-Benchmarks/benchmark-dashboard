@@ -14,7 +14,7 @@ endif
 	.venv/bin/python -m pip install -r requirements.txt
 
 dev:
-	@test -x ui/node_modules/.bin/ng || npm --prefix ui ci --include=dev
+	@test -x ui/node_modules/.bin/vite || npm --prefix ui ci --include=dev
 	@$(PYTHON) -m uvicorn app.main:app --reload & \
 	service_pid=$$!; \
 	trap 'kill $$service_pid 2>/dev/null || true' EXIT INT TERM; \
