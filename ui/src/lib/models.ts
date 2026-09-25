@@ -36,6 +36,7 @@ export interface RunValues {
   run_id?: string;
   software_name: string | null;
   benchmark: string;
+  query?: string;
   columns: ValueColumn[];
   rows: Record<string, unknown>[];
   run_count?: number;

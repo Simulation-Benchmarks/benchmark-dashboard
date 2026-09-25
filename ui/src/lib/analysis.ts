@@ -8,6 +8,12 @@ export interface RunAnalysisData {
   rows: AnalysisRow[];
   columns: ValueColumn[];
   runCount: number;
+  runDetails: {
+    runId: string;
+    softwareName: string;
+    softwareVersion: string | null;
+    query: string;
+  }[];
 }
 
 export async function loadAnalysis(runs: Run[]): Promise<RunAnalysisData> {
@@ -20,16 +26,23 @@ export async function loadAnalysis(runs: Run[]): Promise<RunAnalysisData> {
     }
   }
   const columns = [...columnsByKey.values()];
+  const runDetails = runs.map((run, index) => ({
+    runId: run.run_id,
+    softwareName: run.software_name || 'Unknown software',
+    softwareVersion: run.software_version,
+    query: responses[index].query || '',
+  }));
   const rawRows: AnalysisRow[] = responses.flatMap((response, index) => {
     const run = runs[index];
     const shortRun =
       run.run_id.replace(/\/$/, '').split('/').at(-1)?.slice(0, 8) || run.run_id.slice(0, 8);
-    const software = run.software_name || 'Unknown software';
+    const { softwareName, softwareVersion } = runDetails[index];
     return response.rows.map((row) => ({
       ...row,
-      __software: software,
+      __software: softwareName,
+      __software_version: softwareVersion || '—',
       __run_id: shortRun,
-      __series: `${software} — ${shortRun}`,
+      __series: `${softwareName}${softwareVersion ? ` ${softwareVersion}` : ''} — ${shortRun}`,
     }));
   });
   const numeric = new Set(
@@ -56,6 +69,7 @@ export async function loadAnalysis(runs: Run[]): Promise<RunAnalysisData> {
     columns,
     rows,
     runCount: runs.length,
+    runDetails,
     payload: {
       benchmark: benchmarkLabel,
       software_name: runs.length === 1 ? runs[0].software_name : null,

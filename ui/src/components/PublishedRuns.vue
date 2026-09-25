@@ -163,11 +163,7 @@ function animateGroupToggle(event: MouseEvent): void {
     <div class="toolbar">
       <span class="search"
         ><i class="pi pi-search"></i
-        ><InputText
-          v-model="search"
-          type="search"
-          placeholder="Search software or repository…"
-          aria-label="Search software or repository"
+        ><InputText v-model="search" type="search" placeholder="Search ..." aria-label="Search ..."
       /></span>
       <select v-model="mainBranchOnly" class="branch-filter" aria-label="Filter runs by branch">
         <option :value="false">All runs</option>

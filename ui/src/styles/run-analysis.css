@@ -13,12 +13,69 @@
   margin: 0;
 }
 
+.analysis-run-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin-top: 0.35rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
 .actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 0.5rem;
+}
+
+.value-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.run-query-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.run-query-item {
+  min-width: 0;
+  border: 1px solid var(--line);
+  padding: 1rem;
+}
+
+.run-query-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.run-query-heading > div {
+  min-width: 0;
+}
+
+.run-query-item h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.run-query-item small {
+  display: block;
+  overflow-wrap: anywhere;
+  margin-bottom: 0.75rem;
+}
+
+.run-query-item pre {
+  overflow: auto;
+  margin: 0;
+  font:
+    12px/1.5 ui-monospace,
+    monospace;
 }
 
 .column-legend {
@@ -62,6 +119,12 @@
 
 .values-grid.maximized {
   height: calc(100vh - 270px);
+}
+
+.values-table .p-datatable-tbody > tr > td {
+  padding: 0.12rem 0.5rem;
+  font-size: 14px;
+  line-height: 1.25;
 }
 
 .values-table .p-datatable-thead > tr:nth-child(2) > th {

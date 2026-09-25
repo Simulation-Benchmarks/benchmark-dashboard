@@ -245,11 +245,13 @@ def query_run_values(run_id: str) -> dict[str, Any]:
         for kind, labels in (("parameter", parameters), ("metric", metrics))
         for label in labels
     ]
-    result_rows = _sparql(_dynamic_query(parameters, metrics, graph))
+    query = _dynamic_query(parameters, metrics, graph)
+    result_rows = _sparql(query)
     return {
         "run_id": run_id,
         "software_name": run.get("software_name"),
         "benchmark": run.get("benchmark") or run.get("benchmark_repo"),
+        "query": query.strip(),
         "columns": columns,
         "rows": [
             {column["key"]: _json_value(row.get(column["key"])) for column in columns}
