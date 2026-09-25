@@ -73,6 +73,41 @@
   border-radius: 0;
   overflow: hidden;
 }
+:host ::ng-deep .software-group-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  padding: 0 18px;
+  background: var(--soft);
+  border-top: 1px solid var(--text);
+}
+:host ::ng-deep .software-group-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  font-weight: 700;
+}
+:host ::ng-deep .software-group-title a {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+:host ::ng-deep .software-group-toggle {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 20px;
+  cursor: pointer;
+}
+:host ::ng-deep .software-group-count {
+  color: var(--muted);
+  font-size: 13px;
+}
 .grid-loading-wrapper {
   position: relative;
   min-height: 120px;

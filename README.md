@@ -3,8 +3,8 @@
 Semantic Benchmark Dashboard displays published benchmark runs from the
 production RoHub knowledge graph. It consists of:
 
-- a FastAPI service that queries RoHub, loads benchmark metadata, resolves
-  software names through zbMATH Open, and exposes run values and a recent
+- a FastAPI service that queries RoHub, loads benchmark metadata and software
+  details from each run's named graph, and exposes run values and a recent
   SPARQL-query log; and
 - an Angular UI built with PrimeNG, AG Grid, and Plotly for browsing,
   filtering, and comparing runs.
@@ -32,12 +32,11 @@ ROHUB_PASSWORD=your-rohub-password
 `app/.env` is ignored by Git. Runtime environment variables take precedence,
 and containers can receive the same values with `--env-file app/.env`.
 
-The service also needs outbound HTTPS access to the production RoHub services
-and `api.zbmath.org`.
-
-Software names are resolved from [`app/software_lookup.json`](app/software_lookup.json)
-by default, and fall back to the zbMATH API when an entry is missing. To use
-the zbMATH API-only resolver, set `SOFTWARE_NAME_SOURCE=api`.
+The service also needs outbound HTTPS access to the production RoHub services.
+The published-runs grid groups runs by software and reads each application's
+name and version from its run's named graph. The group name links to the graph's
+software URL when a version is present, or to the run's `prov:used` annotation
+URL otherwise. The expanded rows show run-specific details.
 
 ## Local development
 

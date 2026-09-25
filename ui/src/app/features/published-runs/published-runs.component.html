@@ -44,17 +44,18 @@
   <div class="grid-loading-wrapper">
     <ag-grid-angular
       class="runs-grid"
-      [rowData]="visibleRuns()"
+      [rowData]="groupedRows()"
       [columnDefs]="columns"
       [defaultColDef]="defaultColDef"
-      [pagination]="true"
-      [paginationPageSize]="10"
-      [paginationPageSizeSelector]="[10, 25, 50]"
+      [isFullWidthRow]="isFullWidthRow"
+      [fullWidthCellRenderer]="groupRenderer"
       [rowSelection]="{
         mode: 'multiRow',
         checkboxes: true,
         headerCheckbox: true,
         enableClickSelection: false,
+        hideDisabledCheckboxes: true,
+        isRowSelectable: isRowSelectable,
       }"
       [selectionColumnDef]="{ width: 48, pinned: 'left', sortable: false, resizable: false }"
       [getRowId]="getRowId"

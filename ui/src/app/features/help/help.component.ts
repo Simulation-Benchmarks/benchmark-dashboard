@@ -50,7 +50,7 @@ export class HelpComponent implements OnDestroy {
       selector: '.runs-grid',
       title: 'Review published runs',
       description:
-        'The lower table lists published runs for the selected benchmark, with software names, publication dates, RoHub links, and named graphs.',
+        'The lower table groups published runs by software. The group name links to the software URL; expand it to inspect versions, publication dates, RoHub links, and named graphs.',
     },
     {
       selector: '.compare-trigger',

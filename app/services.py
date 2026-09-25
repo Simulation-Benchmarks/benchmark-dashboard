@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import math
 import os
 import re
@@ -23,10 +22,7 @@ from rdflib import Graph
 # supplied by the runtime (for example, Podman's --env-file) take precedence.
 load_dotenv(Path(__file__).resolve().parent / ".env", override=False)
 
-ZBMATH_API = "https://api.zbmath.org/v1/software"
 CACHE_SECONDS = 300
-SOFTWARE_LOOKUP_PATH = Path(__file__).resolve().parent / "software_lookup.json"
-SOFTWARE_NAME_SOURCE = "lookup"
 
 _cache: tuple[float, list[dict[str, Any]]] | None = None
 _cache_lock = Lock()
@@ -82,18 +78,6 @@ def clear_sparql_log() -> None:
         _sparql_log.clear()
 
 
-def _fetch_json(url: str) -> Any:
-    request = Request(
-        url,
-        headers={"Accept": "application/sparql-results+json, application/json"},
-    )
-    try:
-        with urlopen(request, timeout=20) as response:
-            return json.load(response)
-    except Exception as error:
-        raise UpstreamError(f"Could not load data from {url.split('?')[0]}") from error
-
-
 @lru_cache(maxsize=1)
 def _query_sparql():
     """Configure and return semantic-benchmark's production query helper."""
@@ -114,63 +98,6 @@ def _sparql(query: str) -> list[dict[str, str | None]]:
         raise UpstreamError("Could not query the production RoHub endpoint") from error
     _finish_sparql_log(log_identifier, started)
     return result
-
-
-def _software_slug(url: str) -> str:
-    return url.rstrip("/").rsplit("/", 1)[-1]
-
-
-def _software_identifier(url: str) -> str | None:
-    match = re.search(r"/software/(\d+)(?:/)?$", url)
-    if not match:
-        return None
-    return match.group(1)
-
-
-@lru_cache(maxsize=1)
-def _software_lookup() -> dict[str, str]:
-    try:
-        with SOFTWARE_LOOKUP_PATH.open() as handle:
-            payload = json.load(handle)
-    except FileNotFoundError:
-        return {}
-    except json.JSONDecodeError as error:
-        raise UpstreamError(
-            f"Could not parse software lookup data in {SOFTWARE_LOOKUP_PATH.name}"
-        ) from error
-    return {str(key): str(value) for key, value in payload.items()}
-
-
-def _software_name_from_api(url: str) -> str:
-    identifier = _software_identifier(url)
-    if not identifier:
-        return _software_slug(url)
-    payload = _fetch_json(f"{ZBMATH_API}/{identifier}")
-    return payload["result"]["name"]
-
-
-def _software_name_from_lookup_then_api(url: str) -> str:
-    identifier = _software_identifier(url)
-    if not identifier:
-        return _software_slug(url)
-    lookup_name = _software_lookup().get(identifier)
-    if lookup_name:
-        return lookup_name
-    return _software_name_from_api(url)
-
-
-def _software_names(
-    urls: list[str], *, source: str = SOFTWARE_NAME_SOURCE
-) -> dict[str, str]:
-    if source == "api":
-        with ThreadPoolExecutor(max_workers=min(8, len(urls) or 1)) as pool:
-            return dict(zip(urls, pool.map(_software_name_from_api, urls)))
-    if source == "lookup":
-        with ThreadPoolExecutor(max_workers=min(8, len(urls) or 1)) as pool:
-            return dict(zip(urls, pool.map(_software_name_from_lookup_then_api, urls)))
-    raise UpstreamError(
-        "SOFTWARE_NAME_SOURCE must be either 'lookup' or 'api'"
-    )
 
 
 def _benchmark_uuid(benchmark_url: str) -> str:
@@ -389,7 +316,7 @@ def _validated_graphs_by_run(
 
 
 def load_runs(*, force: bool = False) -> list[dict[str, Any]]:
-    """Reproduce the notebook dataframe immediately after software_url is dropped."""
+    """Load published runs and software metadata from their named graphs."""
     global _cache
     with _cache_lock:
         if not force and _cache and time.monotonic() - _cache[0] < CACHE_SECONDS:
@@ -404,11 +331,11 @@ def load_runs(*, force: bool = False) -> list[dict[str, Any]]:
         run_ids = [row["run_id"] for row in rows if row.get("run_id")]
         graphs = _sparql(build_run_named_graphs_query(run_ids)) if run_ids else []
         graph_by_run = _validated_graphs_by_run(graphs)
-
-        software_urls = sorted(
-            {row["software_url"] for row in rows if row.get("software_url")}
-        )
-        names = _software_names(software_urls)
+        metadata_by_run = {
+            row["run_id"]: row
+            for row in graphs
+            if row.get("graph") == graph_by_run.get(row.get("run_id"))
+        }
 
         result = [
             {
@@ -418,8 +345,15 @@ def load_runs(*, force: bool = False) -> list[dict[str, Any]]:
                 "branch_url": row.get("branch_url"),
                 "graph": graph_by_run.get(row.get("run_id")),
                 "graph_valid": row.get("run_id") in graph_by_run,
-                "software_name": names.get(row.get("software_url")),
-                "software_url": row.get("software_url"),
+                "software_name": _json_value(
+                    metadata_by_run.get(row.get("run_id"), {}).get("software_name")
+                ),
+                "software_url": _json_value(
+                    metadata_by_run.get(row.get("run_id"), {}).get("software_url")
+                ),
+                "software_version": _json_value(
+                    metadata_by_run.get(row.get("run_id"), {}).get("software_version")
+                ),
                 "datePublished": row.get("datePublished"),
                 "version": row.get("version"),
                 "benchmark": "",

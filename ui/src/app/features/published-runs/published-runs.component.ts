@@ -5,6 +5,8 @@ import {
   GridApi,
   GridReadyEvent,
   ICellRendererParams,
+  IRowNode,
+  IsFullWidthRowParams,
   RowClickedEvent,
   SelectionChangedEvent,
 } from 'ag-grid-community';
@@ -20,6 +22,20 @@ import {
 } from '../../shared/utils/display-formatters';
 import { imageLink, textLink } from '../../shared/utils/grid-cell-renderers';
 
+interface SoftwareGroupRow {
+  kind: 'software-group';
+  key: string;
+  name: string;
+  url: string | null;
+  count: number;
+}
+
+type RunGridRow = Run | SoftwareGroupRow;
+
+function isSoftwareGroup(row: RunGridRow | undefined): row is SoftwareGroupRow {
+  return !!row && 'kind' in row && row.kind === 'software-group';
+}
+
 @Component({
   selector: 'app-published-runs',
   standalone: true,
@@ -34,25 +50,66 @@ export class PublishedRunsComponent {
   readonly refreshRequested = output<void>();
   readonly analysisRequested = output<Run[]>();
   readonly mainBranchOnly = signal(true);
+  readonly searchTerm = signal('');
+  readonly collapsedGroups = signal<ReadonlySet<string>>(new Set());
   readonly visibleRuns = computed(() =>
     this.runs().filter(
       (run) =>
         run.graph_valid && (!this.mainBranchOnly() || run.branch_url?.endsWith('/tree/main')),
     ),
   );
+  readonly groupedRows = computed<RunGridRow[]>(() => {
+    const term = this.searchTerm().trim().toLocaleLowerCase();
+    const groups = new Map<string, { name: string; runs: Run[] }>();
+    for (const run of this.visibleRuns()) {
+      if (
+        term &&
+        ![
+          run.software_name,
+          run.software_url,
+          run.software_version,
+          run.benchmark_repo,
+          run.branch_url,
+          run.datePublished,
+        ].some((value) => value?.toLocaleLowerCase().includes(term))
+      ) {
+        continue;
+      }
+      const name = run.software_name?.trim() || 'Unknown software';
+      const key = name.toLocaleLowerCase();
+      const group = groups.get(key) ?? { name, runs: [] };
+      group.runs.push(run);
+      groups.set(key, group);
+    }
+
+    const rows: RunGridRow[] = [];
+    for (const [key, group] of [...groups].sort((a, b) => a[1].name.localeCompare(b[1].name))) {
+      const url =
+        group.runs.find((run) => run.software_version && run.software_url)?.software_url ??
+        group.runs.find((run) => run.software_url)?.software_url ??
+        null;
+      rows.push({ kind: 'software-group', key, name: group.name, url, count: group.runs.length });
+      if (!this.collapsedGroups().has(key)) {
+        rows.push(...group.runs.sort((a, b) => (b.datePublished || '').localeCompare(a.datePublished || '')));
+      }
+    }
+    return rows;
+  });
 
   selectedRuns: Run[] = [];
-  private gridApi?: GridApi<Run>;
-  readonly getRowId = (params: { data: Run }) => params.data.run_id;
-  readonly defaultColDef: ColDef = { sortable: true, resizable: true, filter: true };
-  readonly columns: ColDef<Run>[] = [
+  private gridApi?: GridApi<RunGridRow>;
+  readonly getRowId = (params: { data: RunGridRow }) =>
+    isSoftwareGroup(params.data) ? `software-group:${params.data.key}` : params.data.run_id;
+  readonly isFullWidthRow = (params: IsFullWidthRowParams<RunGridRow>) =>
+    isSoftwareGroup(params.rowNode.data);
+  readonly isRowSelectable = (node: IRowNode<RunGridRow>) => !isSoftwareGroup(node.data);
+  readonly defaultColDef: ColDef = { sortable: false, resizable: true, filter: false };
+  readonly columns: ColDef<RunGridRow>[] = [
     {
-      headerName: 'Software',
-      field: 'software_name',
-      minWidth: 170,
-      flex: 1,
-      cellRenderer: (params: ICellRendererParams<Run>) =>
-        textLink(params.data?.software_url, params.value || 'Unknown'),
+      headerName: 'Version',
+      field: 'software_version',
+      minWidth: 110,
+      width: 120,
     },
     {
       headerName: 'Published',
@@ -65,17 +122,15 @@ export class PublishedRunsComponent {
     {
       headerName: 'Source',
       field: 'branch_url',
-      getQuickFilterText: (params) =>
-        [params.data?.branch_url, params.data?.benchmark_repo].filter(Boolean).join(' '),
       width: 95,
       sortable: false,
       filter: false,
       floatingFilter: false,
       cellClass: 'centered-column',
       headerClass: 'centered-column-header',
-      cellRenderer: (params: ICellRendererParams<Run>) =>
+      cellRenderer: (params: ICellRendererParams<RunGridRow>) =>
         imageLink(
-          params.data?.branch_url,
+          isSoftwareGroup(params.data) ? null : params.data?.branch_url,
           'assets/github.svg',
           'Open run GitHub repository',
           'GitHub',
@@ -87,9 +142,9 @@ export class PublishedRunsComponent {
       sortable: false,
       filter: false,
       floatingFilter: false,
-      cellRenderer: (params: ICellRendererParams<Run>) =>
+      cellRenderer: (params: ICellRendererParams<RunGridRow>) =>
         imageLink(
-          params.data?.run_id,
+          isSoftwareGroup(params.data) ? null : params.data?.run_id,
           'assets/rohub.svg',
           'Open run in RoHub',
           'RoHub',
@@ -102,14 +157,36 @@ export class PublishedRunsComponent {
       sortable: false,
       filter: false,
       floatingFilter: false,
-      cellRenderer: (params: ICellRendererParams<Run>) =>
+      cellRenderer: (params: ICellRendererParams<RunGridRow>) =>
         textLink(
-          params.data?.graph,
-          `Graph ${resourceLabel(params.data?.graph).slice(0, 8)}… ↗`,
+          isSoftwareGroup(params.data) ? null : params.data?.graph,
+          `Graph ${resourceLabel(isSoftwareGroup(params.data) ? null : params.data?.graph).slice(0, 8)}… ↗`,
           'mono',
         ),
     },
   ];
+
+  readonly groupRenderer = (params: ICellRendererParams<RunGridRow>): HTMLElement => {
+    const group = params.data;
+    const container = document.createElement('div');
+    if (!isSoftwareGroup(group)) return container;
+    container.className = 'software-group-row';
+    const title = document.createElement('div');
+    title.className = 'software-group-title';
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'software-group-toggle';
+    button.setAttribute('aria-expanded', String(!this.collapsedGroups().has(group.key)));
+    button.setAttribute('aria-label', `${this.collapsedGroups().has(group.key) ? 'Expand' : 'Collapse'} ${group.name} runs`);
+    button.textContent = this.collapsedGroups().has(group.key) ? '▸' : '▾';
+    button.addEventListener('click', () => this.toggleGroup(group.key));
+    title.append(button, textLink(group.url, group.name));
+    const count = document.createElement('span');
+    count.className = 'software-group-count';
+    count.textContent = `${group.count} ${group.count === 1 ? 'run' : 'runs'}`;
+    container.append(title, count);
+    return container;
+  };
 
   constructor() {
     effect(() => {
@@ -118,23 +195,28 @@ export class PublishedRunsComponent {
     });
   }
 
-  gridReady(event: GridReadyEvent<Run>): void {
+  gridReady(event: GridReadyEvent<RunGridRow>): void {
     this.gridApi = event.api;
   }
   resetDetailGrid(): void {
     this.selectedRuns = [];
     this.gridApi?.deselectAll();
-    this.gridApi?.paginationGoToFirstPage();
   }
   search(value: string): void {
-    this.gridApi?.setGridOption('quickFilterText', value);
+    this.searchTerm.set(value);
   }
-  selectionChanged(event: SelectionChangedEvent<Run>): void {
-    this.selectedRuns = event.api.getSelectedRows();
+  toggleGroup(key: string): void {
+    const collapsed = new Set(this.collapsedGroups());
+    if (collapsed.has(key)) collapsed.delete(key);
+    else collapsed.add(key);
+    this.collapsedGroups.set(collapsed);
   }
-  openSingle(event: RowClickedEvent<Run>): void {
+  selectionChanged(event: SelectionChangedEvent<RunGridRow>): void {
+    this.selectedRuns = event.api.getSelectedRows().filter((row): row is Run => !isSoftwareGroup(row));
+  }
+  openSingle(event: RowClickedEvent<RunGridRow>): void {
     const target = event.event?.target as HTMLElement | null;
-    if (!event.data || target?.closest('a, button, input, .ag-selection-checkbox')) return;
+    if (!event.data || isSoftwareGroup(event.data) || target?.closest('a, button, input, .ag-selection-checkbox')) return;
     this.analysisRequested.emit([event.data]);
   }
   compare(): void {

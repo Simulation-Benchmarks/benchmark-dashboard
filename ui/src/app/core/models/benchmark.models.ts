@@ -7,6 +7,7 @@ export interface Run {
   graph_valid: boolean;
   software_name: string | null;
   software_url: string | null;
+  software_version: string | null;
   datePublished: string | null;
   version: string | null;
   benchmark: string;
