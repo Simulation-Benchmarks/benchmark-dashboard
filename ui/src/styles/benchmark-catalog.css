@@ -10,12 +10,26 @@
 }
 .benchmark-grid .p-datatable-thead > tr > th:is(:first-child, :nth-child(n + 3)),
 .benchmark-grid .p-datatable-tbody > tr > td:is(:first-child, :nth-child(n + 3)),
-.runs-grid .p-datatable-thead > tr > th:is(:first-child, :nth-child(4), :nth-child(5), :nth-child(6)),
-.runs-grid .p-datatable-tbody > tr:not(.p-datatable-row-group-header) > td:is(:first-child, :nth-child(4), :nth-child(5), :nth-child(6)) {
+.runs-grid
+  .p-datatable-thead
+  > tr
+  > th:is(:first-child, :nth-child(4), :nth-child(5), :nth-child(6)),
+.runs-grid
+  .p-datatable-tbody
+  > tr:not(.p-datatable-row-group-header)
+  > td:is(:first-child, :nth-child(4), :nth-child(5), :nth-child(6)) {
   text-align: center;
 }
-.benchmark-grid .p-datatable-thead > tr > th:is(:first-child, :nth-child(n + 3)) .p-datatable-column-header-content,
-.runs-grid .p-datatable-thead > tr > th:is(:first-child, :nth-child(4), :nth-child(5), :nth-child(6)) .p-datatable-column-header-content {
+.benchmark-grid
+  .p-datatable-thead
+  > tr
+  > th:is(:first-child, :nth-child(n + 3))
+  .p-datatable-column-header-content,
+.runs-grid
+  .p-datatable-thead
+  > tr
+  > th:is(:first-child, :nth-child(4), :nth-child(5), :nth-child(6))
+  .p-datatable-column-header-content {
   justify-content: center;
 }
 

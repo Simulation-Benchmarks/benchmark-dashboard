@@ -15,7 +15,9 @@
   border-bottom: 1px solid var(--line);
 }
 
-:is(.benchmark-grid, .runs-grid) .p-datatable-tbody > tr:nth-child(even):not(.p-datatable-row-group-header):not(.p-datatable-row-selected) {
+:is(.benchmark-grid, .runs-grid)
+  .p-datatable-tbody
+  > tr:nth-child(even):not(.p-datatable-row-group-header):not(.p-datatable-row-selected) {
   background: color-mix(in srgb, var(--surface) 94%, var(--soft));
 }
 
@@ -29,7 +31,10 @@
   color: var(--text);
 }
 
-:is(.benchmark-grid, .runs-grid) .p-datatable-tbody > tr:not(.p-datatable-row-group-header):hover > td,
+:is(.benchmark-grid, .runs-grid)
+  .p-datatable-tbody
+  > tr:not(.p-datatable-row-group-header):hover
+  > td,
 :is(.benchmark-grid, .runs-grid) .p-datatable-tbody > tr.p-datatable-row-selected > td {
   background: transparent;
 }

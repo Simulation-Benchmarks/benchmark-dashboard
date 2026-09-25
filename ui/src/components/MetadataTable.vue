@@ -15,7 +15,13 @@ defineProps<{
     <Column field="name" header="Name" />
     <Column header="Unit">
       <template #body="slot">
-        <a v-if="slot.data.unit" :href="slot.data.unit" :title="slot.data.unit" target="_blank" rel="noopener noreferrer">
+        <a
+          v-if="slot.data.unit"
+          :href="slot.data.unit"
+          :title="slot.data.unit"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           {{ resourceLabel(slot.data.unit) }}
         </a>
         <span v-else>—</span>

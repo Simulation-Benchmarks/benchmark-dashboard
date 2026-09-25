@@ -10,9 +10,25 @@ export interface ThemeColors {
 }
 
 export const dark = ref(localStorage.getItem('benchmark-theme') === 'dark');
-export const colors = computed<ThemeColors>(() => dark.value
-  ? { surface: '#21242a', plot: '#17191d', text: '#f4f5f7', muted: '#b4bac4', line: '#3c414b', accent: '#c8ced8' }
-  : { surface: '#ffffff', plot: '#f7f8fb', text: '#000e52', muted: '#4f4f4f', line: '#e5e5e6', accent: '#046cb4' });
+export const colors = computed<ThemeColors>(() =>
+  dark.value
+    ? {
+        surface: '#21242a',
+        plot: '#17191d',
+        text: '#f4f5f7',
+        muted: '#b4bac4',
+        line: '#3c414b',
+        accent: '#c8ced8',
+      }
+    : {
+        surface: '#ffffff',
+        plot: '#f7f8fb',
+        text: '#000e52',
+        muted: '#4f4f4f',
+        line: '#e5e5e6',
+        accent: '#046cb4',
+      },
+);
 
 export function setDark(value: boolean): void {
   dark.value = value;

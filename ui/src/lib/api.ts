@@ -25,10 +25,17 @@ function cachedMetadata(key: string, path: string): Promise<BenchmarkMetadata> {
 }
 
 export const api = {
-  runs: (refresh = false) => request<{ items: Run[]; count: number }>(`/api/runs${refresh ? '?refresh=true' : ''}`),
-  runValues: (runId: string) => request<RunValues>(`/api/run-values?run_id=${encodeURIComponent(runId)}`),
-  runMetadata: (runId: string) => cachedMetadata(`run:${runId}`, `/api/run-metadata?run_id=${encodeURIComponent(runId)}`),
-  benchmarkMetadata: (url: string) => cachedMetadata(`benchmark:${url}`, `/api/benchmark-metadata?benchmark_url=${encodeURIComponent(url)}`),
+  runs: (refresh = false) =>
+    request<{ items: Run[]; count: number }>(`/api/runs${refresh ? '?refresh=true' : ''}`),
+  runValues: (runId: string) =>
+    request<RunValues>(`/api/run-values?run_id=${encodeURIComponent(runId)}`),
+  runMetadata: (runId: string) =>
+    cachedMetadata(`run:${runId}`, `/api/run-metadata?run_id=${encodeURIComponent(runId)}`),
+  benchmarkMetadata: (url: string) =>
+    cachedMetadata(
+      `benchmark:${url}`,
+      `/api/benchmark-metadata?benchmark_url=${encodeURIComponent(url)}`,
+    ),
   sparqlLog: () => request<{ items: SparqlEntry[]; count: number }>('/api/sparql-log'),
   clearSparqlLog: () => request<void>('/api/sparql-log', { method: 'DELETE' }),
 };

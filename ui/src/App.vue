@@ -4,7 +4,7 @@ import ToggleSwitch from 'primevue/toggleswitch';
 import BenchmarkCatalog from './components/BenchmarkCatalog.vue';
 import PublishedRuns from './components/PublishedRuns.vue';
 import RunAnalysis from './components/RunAnalysis.vue';
-import Help from './components/Help.vue';
+import DashboardHelp from './components/DashboardHelp.vue';
 import SparqlLog from './components/SparqlLog.vue';
 import { api } from './lib/api';
 import { dark, setDark } from './lib/theme';
@@ -12,7 +12,9 @@ import type { Run } from './lib/models';
 
 const runs = ref<Run[]>([]);
 const selectedBenchmarkUrl = ref('');
-const publishedRuns = computed(() => runs.value.filter((run) => run.benchmark_url === selectedBenchmarkUrl.value));
+const publishedRuns = computed(() =>
+  runs.value.filter((run) => run.benchmark_url === selectedBenchmarkUrl.value),
+);
 const loading = ref(true);
 const error = ref('');
 const updated = ref('');
@@ -40,10 +42,14 @@ onMounted(() => void load());
       <img class="brand-wordmark" src="/assets/nfdi4ing.svg" alt="NFDI4ING" />
     </a>
     <div class="ribbon-actions">
-      <Help />
+      <DashboardHelp />
       <label class="theme-switch">
         <i class="pi" :class="dark ? 'pi-moon' : 'pi-sun'" aria-hidden="true"></i>
-        <ToggleSwitch :model-value="dark" aria-label="Toggle dark theme" @update:model-value="setDark(Boolean($event))" />
+        <ToggleSwitch
+          :model-value="dark"
+          aria-label="Toggle dark theme"
+          @update:model-value="setDark(Boolean($event))"
+        />
       </label>
     </div>
   </header>
@@ -51,7 +57,11 @@ onMounted(() => void load());
   <main>
     <div v-if="error" class="state error">{{ error }}</div>
     <template v-else>
-      <BenchmarkCatalog :runs="runs" :loading="loading" @select="selectedBenchmarkUrl = $event?.benchmark_url || ''" />
+      <BenchmarkCatalog
+        :runs="runs"
+        :loading="loading"
+        @select="selectedBenchmarkUrl = $event?.benchmark_url || ''"
+      />
       <PublishedRuns
         :runs="publishedRuns"
         :loading="loading"

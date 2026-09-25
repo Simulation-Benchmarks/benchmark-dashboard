@@ -60,7 +60,9 @@ async function copy(entry: SparqlEntry): Promise<void> {
   await navigator.clipboard.writeText(entry.query);
   copiedId.value = entry.id;
   window.clearTimeout(copyTimer);
-  copyTimer = window.setTimeout(() => { copiedId.value = null; }, 1600);
+  copyTimer = window.setTimeout(() => {
+    copiedId.value = null;
+  }, 1600);
 }
 
 function formatTime(value: string): string {
@@ -75,18 +77,84 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="log-launcher">
-    <Button label="Logs" icon="pi pi-history" class="logs-button" severity="contrast" @click="open" />
+    <Button
+      label="Logs"
+      icon="pi pi-history"
+      class="logs-button"
+      severity="contrast"
+      @click="open"
+    />
   </div>
-  <Dialog v-model:visible="visible" class="sparql-log-dialog" modal maximizable :style="{ width: 'min(920px, 94vw)' }" :content-style="{ height: 'min(620px, 70vh)', overflow: 'auto' }" @hide="stopPolling">
-    <template #header><div><span class="eyebrow">Live execution flow</span><h2>SPARQL queries</h2><small>{{ entries.length }} recent queries · updates every second</small></div></template>
-    <div class="log-toolbar"><Button label="Clear" icon="pi pi-trash" severity="danger" outlined size="small" :disabled="clearing" @click="clear" /></div>
-    <p class="endpoint-notice">Run copied queries directly on the RoHub SPARQL endpoint: <a href="https://virtuoso-rohub2020-production.apps.bst2.paas.psnc.pl/sparql" target="_blank" rel="noopener noreferrer">virtuoso-rohub2020-production.apps.bst2.paas.psnc.pl/sparql</a></p>
-    <p v-if="error" class="error state">{{ error }}</p><p v-else-if="!entries.length" class="state">No SPARQL query has run yet.</p>
+  <Dialog
+    v-model:visible="visible"
+    class="sparql-log-dialog"
+    modal
+    maximizable
+    :style="{ width: 'min(920px, 94vw)' }"
+    :content-style="{ height: 'min(620px, 70vh)', overflow: 'auto' }"
+    @hide="stopPolling"
+  >
+    <template #header
+      ><div>
+        <span class="eyebrow">Live execution flow</span>
+        <h2>SPARQL queries</h2>
+        <small>{{ entries.length }} recent queries · updates every second</small>
+      </div></template
+    >
+    <div class="log-toolbar">
+      <Button
+        label="Clear"
+        icon="pi pi-trash"
+        severity="danger"
+        outlined
+        size="small"
+        :disabled="clearing"
+        @click="clear"
+      />
+    </div>
+    <p class="endpoint-notice">
+      Run copied queries directly on the RoHub SPARQL endpoint:
+      <a
+        href="https://virtuoso-rohub2020-production.apps.bst2.paas.psnc.pl/sparql"
+        target="_blank"
+        rel="noopener noreferrer"
+        >virtuoso-rohub2020-production.apps.bst2.paas.psnc.pl/sparql</a
+      >
+    </p>
+    <p v-if="error" class="error state">{{ error }}</p>
+    <p v-else-if="!entries.length" class="state">No SPARQL query has run yet.</p>
     <article v-for="entry in entries" :key="entry.id" class="log-entry">
-      <header><span class="status" :class="entry.status">{{ entry.status }}</span><time>{{ formatTime(entry.started_at) }}</time><span>{{ entry.duration_ms === null ? 'In progress' : `${entry.duration_ms} ms` }}</span>
-        <div class="log-actions"><button class="log-action" type="button" :aria-label="copiedId === entry.id ? 'Query copied' : 'Copy query'" @click="copy(entry)"><i class="pi" :class="copiedId === entry.id ? 'pi-check' : 'pi-copy'"></i></button><button class="log-action" type="button" :aria-expanded="!collapsed.has(entry.id)" :aria-controls="`sparql-log-${entry.id}`" :aria-label="collapsed.has(entry.id) ? 'Expand query' : 'Collapse query'" @click="toggle(entry.id)"><i class="pi" :class="collapsed.has(entry.id) ? 'pi-chevron-down' : 'pi-chevron-up'"></i></button></div>
+      <header>
+        <span class="status" :class="entry.status">{{ entry.status }}</span
+        ><time>{{ formatTime(entry.started_at) }}</time
+        ><span>{{ entry.duration_ms === null ? 'In progress' : `${entry.duration_ms} ms` }}</span>
+        <div class="log-actions">
+          <button
+            class="log-action"
+            type="button"
+            :aria-label="copiedId === entry.id ? 'Query copied' : 'Copy query'"
+            @click="copy(entry)"
+          >
+            <i class="pi" :class="copiedId === entry.id ? 'pi-check' : 'pi-copy'"></i></button
+          ><button
+            class="log-action"
+            type="button"
+            :aria-expanded="!collapsed.has(entry.id)"
+            :aria-controls="`sparql-log-${entry.id}`"
+            :aria-label="collapsed.has(entry.id) ? 'Expand query' : 'Collapse query'"
+            @click="toggle(entry.id)"
+          >
+            <i
+              class="pi"
+              :class="collapsed.has(entry.id) ? 'pi-chevron-down' : 'pi-chevron-up'"
+            ></i>
+          </button>
+        </div>
       </header>
-      <div v-if="!collapsed.has(entry.id)" :id="`sparql-log-${entry.id}`"><pre>{{ entry.query }}</pre><p v-if="entry.error" class="query-error">{{ entry.error }}</p></div>
+      <div v-if="!collapsed.has(entry.id)" :id="`sparql-log-${entry.id}`">
+        <pre>{{ entry.query }}</pre>
+        <p v-if="entry.error" class="query-error">{{ entry.error }}</p>
+      </div>
     </article>
   </Dialog>
 </template>

@@ -6,7 +6,10 @@
   "scripts": {
     "start": "vite --host localhost",
     "build": "vue-tsc --noEmit && vite build",
-    "preview": "vite preview --host localhost"
+    "preview": "vite preview --host localhost",
+    "lint": "eslint src vite.config.ts",
+    "format": "prettier --write 'src/**/*.{vue,ts,css}' vite.config.ts index.html eslint.config.mjs package.json tsconfig.json .prettierrc README.md",
+    "format:check": "prettier --check 'src/**/*.{vue,ts,css}' vite.config.ts index.html eslint.config.mjs package.json tsconfig.json .prettierrc README.md"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.3.1",
@@ -20,6 +23,10 @@
   "devDependencies": {
     "@types/plotly.js": "^3.0.10",
     "@vitejs/plugin-vue": "^6.0.0",
+    "@vue/eslint-config-typescript": "^14.9.0",
+    "eslint": "^10.11.0",
+    "eslint-plugin-vue": "^10.11.1",
+    "prettier": "^3.9.9",
     "typescript": "~5.9.2",
     "vite": "^7.0.0",
     "vue-tsc": "^3.1.0"
