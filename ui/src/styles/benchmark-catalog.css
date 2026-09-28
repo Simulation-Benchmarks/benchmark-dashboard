@@ -5,7 +5,7 @@
   overflow: hidden;
 }
 .benchmark-grid .p-datatable-thead > tr > th {
-  background: var(--parameter-soft);
+  background: color-mix(in srgb, var(--soft) 82%, var(--parameter-soft));
   color: var(--text);
 }
 .benchmark-grid .p-datatable-thead > tr > th:is(:first-child, :nth-child(n + 3)),
@@ -35,8 +35,8 @@
 
 .metadata-button {
   display: inline-grid;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   place-items: center;
   border: 0;

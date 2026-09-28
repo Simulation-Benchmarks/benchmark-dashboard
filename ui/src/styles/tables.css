@@ -15,6 +15,14 @@
   border-bottom: 1px solid var(--line);
 }
 
+:is(.benchmark-grid, .runs-grid) .p-datatable-thead > tr > th {
+  padding-block: 0.65rem;
+}
+
+:is(.benchmark-grid, .runs-grid) .p-datatable-tbody > tr:not(.p-datatable-row-group-header) > td {
+  padding-block: 0.35rem;
+}
+
 :is(.benchmark-grid, .runs-grid)
   .p-datatable-tbody
   > tr:nth-child(even):not(.p-datatable-row-group-header):not(.p-datatable-row-selected) {
