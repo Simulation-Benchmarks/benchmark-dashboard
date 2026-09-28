@@ -19,24 +19,54 @@ const steps: TourStep[] = [
     selector: '.metadata-button',
     fallback: '.benchmark-grid',
     title: 'Inspect benchmark metadata',
-    description: 'Load the benchmark definition on demand to inspect parameters and metrics.',
+    description: 'Open the metadata dialog to browse the benchmark parameters and metrics.',
+  },
+  {
+    selector: '.notebook-action',
+    fallback: '.benchmark-grid',
+    title: 'Open benchmark resources',
+    description:
+      'Use the Source, RoHub, and Notebook links to open the benchmark repository, its RoHub record, or its Jupyter environment.',
+  },
+  {
+    selector: '.search',
+    title: 'Find published runs',
+    description:
+      'Search by software, version, repository, branch, or publication date. The branch menu beside it switches between main-branch and all runs.',
   },
   {
     selector: '.runs-grid',
-    title: 'Review published runs',
+    title: 'Explore runs by software',
     description:
-      'Runs are grouped by software. Expand a group to inspect versions, publication dates, RoHub links, and named graphs.',
+      'Expand a software group to see its runs. Open a run row for values and plots, or follow its source, RoHub, and named graph links.',
   },
   {
     selector: '.compare-trigger',
     title: 'Compare compatible runs',
     description:
-      'Select at least two runs from the same benchmark, then open shared tables and plots.',
+      'Select at least two runs from this benchmark, then choose Compare. The dialog shows software names and versions alongside the values and plot.',
+  },
+  {
+    selector: '.value-actions',
+    fallback: '.runs-grid',
+    title: 'Filter, export, and inspect queries',
+    description:
+      'In a run or comparison dialog, filter values by column, export the visible rows as CSV, or open SPARQL query to copy the query for each run.',
+  },
+  {
+    selector: '.reload-button',
+    title: 'Refresh the data',
+    description: 'Choose Reload to request the latest runs instead of using cached results.',
   },
   {
     selector: '.log-launcher',
     title: 'Trace backend SPARQL queries',
-    description: 'Open Logs to inspect live queries and copy them for the RoHub endpoint.',
+    description: 'Open Logs to inspect live backend queries and copy them for the RoHub endpoint.',
+  },
+  {
+    selector: '.theme-switch',
+    title: 'Switch appearance',
+    description: 'Use the theme switch to choose the light or dark dashboard appearance.',
   },
 ];
 const visible = ref(false);
@@ -150,7 +180,7 @@ onBeforeUnmount(() => {
       </div>
       <p>
         This dashboard groups published simulation runs by benchmark, lets you inspect benchmark
-        metadata, and helps you compare runs from the same benchmark.
+        metadata, and lets you inspect or compare run values, plots, and their SPARQL queries.
       </p>
     </section>
     <section class="help-section">
@@ -158,7 +188,10 @@ onBeforeUnmount(() => {
       <div class="help-grid">
         <article class="help-card">
           <h4>1. Choose a benchmark</h4>
-          <p>Select a benchmark in the top table to see its published runs below.</p>
+          <p>
+            Select a benchmark in the top table to see its published runs below. Its Source, RoHub,
+            and Notebook links open related resources.
+          </p>
         </article>
         <article class="help-card">
           <h4>2. Inspect metadata</h4>
@@ -166,18 +199,38 @@ onBeforeUnmount(() => {
         </article>
         <article class="help-card">
           <h4>3. Explore published runs</h4>
-          <p>Search by software, open links, and reload to bypass the API cache.</p>
-        </article>
-        <article class="help-card">
-          <h4>4. Compare runs</h4>
           <p>
-            Select at least two runs from one benchmark and choose Compare for shared tables and
-            plots.
+            Search by software, version, repository, branch, or date. Switch between main-branch and
+            all runs, expand software groups, and open source, RoHub, or named graph links.
           </p>
         </article>
         <article class="help-card">
-          <h4>5. Review SPARQL activity</h4>
-          <p>Open Logs to inspect and copy backend queries for the RoHub endpoint.</p>
+          <h4>4. Inspect a run</h4>
+          <p>
+            Click a run row to see its values and plot. Filter individual columns, then export the
+            visible rows as CSV.
+          </p>
+        </article>
+        <article class="help-card">
+          <h4>5. Compare runs</h4>
+          <p>
+            Select at least two runs from one benchmark and choose Compare. The dialog identifies
+            each run by software name and version.
+          </p>
+        </article>
+        <article class="help-card">
+          <h4>6. View the data queries</h4>
+          <p>
+            In the Values tab, choose SPARQL query to inspect, collapse, or copy each run's query.
+            The dialog links to the RoHub endpoint where you can run it.
+          </p>
+        </article>
+        <article class="help-card">
+          <h4>7. Refresh and review activity</h4>
+          <p>
+            Choose Reload to bypass the API cache. Open Logs to inspect live backend SPARQL
+            activity.
+          </p>
         </article>
       </div>
     </section>
