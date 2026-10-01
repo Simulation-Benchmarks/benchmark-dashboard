@@ -3,5 +3,5 @@ pandas
 python-dotenv
 rdflib
 rohub
-semantic-benchmark
+semantic-benchmark @ git+https://github.com/Simulation-Benchmarks/semantic-benchmark.git@22-adding-tool-name-and-software-version-to-final-rocrate
 uvicorn[standard]

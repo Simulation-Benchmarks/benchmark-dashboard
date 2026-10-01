@@ -38,6 +38,7 @@ const groupedRuns = computed<RunRow[]>(() => {
         !term ||
         [
           run.software_name,
+          run.title,
           run.software_url,
           run.software_version,
           run.benchmark_repo,
@@ -201,13 +202,18 @@ function animateGroupToggle(event: MouseEvent): void {
         row-group-mode="subheader"
         group-rows-by="software_group_key"
         expandable-row-groups
+        resizable-columns
+        column-resize-mode="fit"
         class="runs-grid"
-        :pt="{ rowGroupHeaderCell: { colspan: 6 } }"
+        :pt="{ rowGroupHeaderCell: { colspan: 7 } }"
         table-style="min-width: 640px"
         @row-click="openRun"
         @sort="sortRuns"
       >
         <Column selection-mode="multiple" header-style="width: 48px" />
+        <!-- <Column field="title" header="Run Title">
+          <template #body="slot">{{ slot.data.title || '—' }}</template>
+        </Column> -->
         <Column field="software_version" header="Software Version" sortable>
           <template #body="slot">{{ slot.data.software_version || '—' }}</template>
         </Column>

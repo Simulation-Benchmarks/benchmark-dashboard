@@ -1,5 +1,6 @@
 export interface Run {
   run_id: string;
+  title: string | null;
   benchmark_url: string;
   benchmark_repo: string;
   branch_url: string | null;

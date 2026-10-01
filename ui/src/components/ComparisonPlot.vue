@@ -21,6 +21,10 @@ const metricOptions = computed(() =>
     .filter((column) => column.kind === 'metric')
     .map((column) => ({ label: column.label, value: column.key })),
 );
+const xOptions = computed(() => [
+  { label: 'Parameters', items: parameterOptions.value },
+  { label: 'Metrics', items: metricOptions.value },
+]);
 const scaleOptions = [
   { label: 'Linear', value: 'linear' },
   { label: 'Logarithmic', value: 'log' },
@@ -30,7 +34,7 @@ let resizeObserver: ResizeObserver | undefined;
 watch(
   () => props.data,
   () => {
-    xKey.value = parameterOptions.value[0]?.value || '';
+    xKey.value = parameterOptions.value[0]?.value || metricOptions.value[0]?.value || '';
     yKey.value = metricOptions.value[0]?.value || '';
   },
   { immediate: true },
@@ -139,11 +143,13 @@ onBeforeUnmount(() => {
       <fieldset>
         <legend>X axis</legend>
         <label
-          >Parameter<Select
+          >Parameter or metric<Select
             v-model="xKey"
-            :options="parameterOptions"
+            :options="xOptions"
             option-label="label"
-            option-value="value" /></label
+            option-value="value"
+            option-group-label="label"
+            option-group-children="items" /></label
         ><label
           >Scale<Select
             v-model="xScale"

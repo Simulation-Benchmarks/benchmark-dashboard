@@ -342,6 +342,7 @@ def load_runs(*, force: bool = False) -> list[dict[str, Any]]:
         result = [
             {
                 "run_id": row.get("run_id"),
+                "title": _json_value(row.get("title")),
                 "benchmark_url": row.get("benchmark_url"),
                 "benchmark_repo": row.get("benchmark_repo"),
                 "branch_url": row.get("branch_url"),

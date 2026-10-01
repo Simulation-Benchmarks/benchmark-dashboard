@@ -15,7 +15,7 @@ COPY requirements.txt .
 # (no musllinux wheel available for that pinned version). --virtual groups
 # them so the whole toolchain can be removed again in one step, keeping the
 # final image slim.
-RUN apk add --no-cache --virtual .build-deps build-base musl-dev libffi-dev \
+RUN apk add --no-cache --virtual .build-deps build-base musl-dev libffi-dev git \
     && python -m pip install --no-cache-dir --upgrade pip \
     && python -m pip install --no-cache-dir -r requirements.txt \
     && python -m pip uninstall -y pip \
