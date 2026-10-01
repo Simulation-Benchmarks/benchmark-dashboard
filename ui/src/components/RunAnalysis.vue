@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue';
+import { computed, defineAsyncComponent, onBeforeUnmount, ref } from 'vue';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import Tabs from 'primevue/tabs';
@@ -7,14 +7,13 @@ import TabList from 'primevue/tablist';
 import Tab from 'primevue/tab';
 import TabPanels from 'primevue/tabpanels';
 import TabPanel from 'primevue/tabpanel';
-import DataTable from 'primevue/datatable';
-import Column from 'primevue/column';
-import InputText from 'primevue/inputtext';
 import ProgressSpinner from 'primevue/progressspinner';
 import type { Run } from '../lib/models';
 import type { AnalysisRow, RunAnalysisData } from '../lib/analysis';
 import { loadAnalysis } from '../lib/analysis';
+import type { SheetSnapshot } from './ValuesSpreadsheet.vue';
 import ComparisonPlot from './ComparisonPlot.vue';
+const ValuesSpreadsheet = defineAsyncComponent(() => import('./ValuesSpreadsheet.vue'));
 
 const visible = ref(false);
 const queryVisible = ref(false);
@@ -26,22 +25,19 @@ const title = ref('Parameters and metrics');
 const tab = ref('values');
 const maximized = ref(false);
 const analysis = ref<RunAnalysisData | null>(null);
-const columnFilters = ref<Record<string, string>>({});
-const filteredRows = computed<AnalysisRow[]>(() => {
-  if (!analysis.value) return [];
-  return analysis.value.rows.filter((row) =>
-    Object.entries(columnFilters.value).every(
-      ([key, term]) =>
-        !term ||
-        String(row[key] ?? '')
-          .toLocaleLowerCase()
-          .includes(term.toLocaleLowerCase()),
-    ),
-  );
-});
+const sheetSnapshot = ref<SheetSnapshot | null>(null);
+const displayColumns = computed(
+  () => sheetSnapshot.value?.columns || analysis.value?.columns || [],
+);
+const filteredRows = computed<AnalysisRow[]>(
+  () => sheetSnapshot.value?.visibleRows || analysis.value?.rows || [],
+);
+const plotData = computed<RunAnalysisData | null>(() =>
+  analysis.value ? { ...analysis.value, columns: displayColumns.value } : null,
+);
 const context = computed(() =>
   analysis.value
-    ? `${analysis.value.runCount} ${analysis.value.runCount === 1 ? 'run' : 'runs'} · ${filteredRows.value.length} of ${analysis.value.rows.length} observations`
+    ? `${analysis.value.runCount} ${analysis.value.runCount === 1 ? 'run' : 'runs'} · ${filteredRows.value.length} of ${sheetSnapshot.value?.rows.length ?? analysis.value.rows.length} observations`
     : '',
 );
 const runLabels = computed(
@@ -86,7 +82,7 @@ async function open(runs: Run[]): Promise<void> {
   loading.value = true;
   error.value = '';
   analysis.value = null;
-  columnFilters.value = {};
+  sheetSnapshot.value = null;
   tab.value = 'values';
   title.value = runs.length > 1 ? 'Loading comparison…' : 'Loading run values…';
   try {
@@ -103,6 +99,10 @@ async function open(runs: Run[]): Promise<void> {
 }
 defineExpose({ open });
 
+function updateSheet(snapshot: SheetSnapshot): void {
+  sheetSnapshot.value = snapshot;
+}
+
 function exportCsv(): void {
   if (!analysis.value) return;
   const columns = [
@@ -113,7 +113,7 @@ function exportCsv(): void {
           { key: '__run_id', label: 'Run' },
         ]
       : []),
-    ...analysis.value.columns,
+    ...displayColumns.value,
   ];
   const escape = (value: unknown) => `"${String(value ?? '').replaceAll('"', '""')}"`;
   const csv = [
@@ -160,15 +160,19 @@ function exportCsv(): void {
       <p>Running SPARQL queries…</p>
     </div>
     <p v-else-if="error" class="analysis-state error">{{ error }}</p>
-    <Tabs v-else-if="analysis" v-model:value="tab">
+    <Tabs
+      v-else-if="analysis"
+      v-model:value="tab"
+      :class="{ 'analysis-values-tabs': tab === 'values' }"
+    >
       <TabList><Tab value="values">Values</Tab><Tab value="plot">Plot</Tab></TabList>
       <TabPanels>
-        <TabPanel value="values">
+        <TabPanel value="values" class="analysis-values-panel">
           <div class="actions">
-            <div class="column-legend" aria-label="Column type legend">
-              <span><i class="parameter-swatch"></i>Parameters</span
-              ><span><i class="metric-swatch"></i>Metrics</span>
-            </div>
+            <p class="spreadsheet-hint">
+              Add a named formula column below. Use row 2 references such as <code>=SQRT(P2)</code>;
+              the formula fills down automatically. Use the dropdowns to sort or filter.
+            </p>
             <div class="value-actions">
               <Button
                 label="SPARQL query"
@@ -187,63 +191,17 @@ function exportCsv(): void {
             </div>
           </div>
           <div class="values-grid" :class="{ maximized }">
-            <DataTable
-              :value="filteredRows"
-              scrollable
-              scroll-height="flex"
-              filter-display="row"
-              class="values-table"
-              table-style="min-width: 100%"
-            >
-              <Column v-if="analysis.runCount > 1" field="__software" header="Software" sortable>
-                <template #body="slot">{{ slot.data.__software }}</template>
-                <template #filter
-                  ><InputText v-model="columnFilters.__software" aria-label="Filter Software"
-                /></template>
-              </Column>
-              <Column
-                v-if="analysis.runCount > 1"
-                field="__software_version"
-                header="Software Version"
-                sortable
-              >
-                <template #body="slot">{{ slot.data.__software_version }}</template>
-                <template #filter>
-                  <InputText
-                    v-model="columnFilters.__software_version"
-                    aria-label="Filter Version"
-                  />
-                </template>
-              </Column>
-              <Column v-if="analysis.runCount > 1" field="__run_id" header="Run" sortable>
-                <template #body="slot">{{ slot.data.__run_id }}</template>
-                <template #filter
-                  ><InputText v-model="columnFilters.__run_id" aria-label="Filter Run"
-                /></template>
-              </Column>
-              <Column
-                v-for="column in analysis.columns"
-                :key="column.key"
-                :field="column.key"
-                :header="column.label"
-                sortable
-                :header-class="`header-${column.kind}`"
-                :body-class="`cell-${column.kind}`"
-              >
-                <template #body="slot">{{ slot.data[column.key] ?? '—' }}</template>
-                <template #filter
-                  ><InputText
-                    v-model="columnFilters[column.key]"
-                    :aria-label="`Filter ${column.label}`"
-                /></template>
-              </Column>
-              <template #empty>No values match the current filters.</template>
-            </DataTable>
+            <ValuesSpreadsheet :data="analysis" @change="updateSheet" />
           </div>
         </TabPanel>
-        <TabPanel value="plot"
-          ><ComparisonPlot :data="analysis" :rows="filteredRows" :maximized="maximized"
-        /></TabPanel>
+        <TabPanel value="plot">
+          <ComparisonPlot
+            v-if="plotData"
+            :data="plotData"
+            :rows="filteredRows"
+            :maximized="maximized"
+          />
+        </TabPanel>
       </TabPanels>
     </Tabs>
   </Dialog>

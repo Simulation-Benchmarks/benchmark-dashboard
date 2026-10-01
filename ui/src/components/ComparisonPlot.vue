@@ -23,9 +23,19 @@ const metricOptions = computed(() =>
     .filter((column) => column.kind === 'metric')
     .map((column) => ({ label: column.label, value: column.key })),
 );
+const calculatedOptions = computed(() =>
+  props.data.columns
+    .filter((column) => column.kind === 'calculated')
+    .map((column) => ({ label: column.label, value: column.key })),
+);
 const xOptions = computed(() => [
   { label: 'Parameters', items: parameterOptions.value },
   { label: 'Metrics', items: metricOptions.value },
+  { label: 'Calculated', items: calculatedOptions.value },
+]);
+const yOptions = computed(() => [
+  { label: 'Metrics', items: metricOptions.value },
+  { label: 'Calculated', items: calculatedOptions.value },
 ]);
 const groupOptions = computed(() => [
   {
@@ -39,6 +49,7 @@ const groupOptions = computed(() => [
   },
   { label: 'Parameters', items: parameterOptions.value },
   { label: 'Metrics', items: metricOptions.value },
+  { label: 'Calculated', items: calculatedOptions.value },
 ]);
 const scaleOptions = [
   { label: 'Linear', value: 'linear' },
@@ -47,13 +58,28 @@ const scaleOptions = [
 let resizeObserver: ResizeObserver | undefined;
 
 watch(
-  () => props.data,
+  () => props.data.runDetails,
   () => {
     xKey.value = parameterOptions.value[0]?.value || metricOptions.value[0]?.value || '';
     yKey.value = metricOptions.value[0]?.value || '';
     groupKeys.value = props.data.runCount > 1 ? ['__software', '__tool_name'] : [];
   },
   { immediate: true },
+);
+watch(
+  () => props.data.columns,
+  (columns) => {
+    if (!columns.some((column) => column.key === xKey.value)) {
+      xKey.value = parameterOptions.value[0]?.value || metricOptions.value[0]?.value || '';
+    }
+    if (!columns.some((column) => column.key === yKey.value)) {
+      yKey.value = metricOptions.value[0]?.value || calculatedOptions.value[0]?.value || '';
+    }
+    const valid = new Set(
+      groupOptions.value.flatMap((group) => group.items.map((item) => item.value)),
+    );
+    groupKeys.value = groupKeys.value.filter((key) => valid.has(key));
+  },
 );
 watch(
   [() => props.rows, () => props.maximized, colors, xKey, yKey, groupKeys, xScale, yScale],
@@ -82,7 +108,9 @@ async function draw(): Promise<void> {
   const xColumn = props.data.columns.find((column) => column.key === xKey.value);
   const yColumn = props.data.columns.find((column) => column.key === yKey.value);
   const groupLabels = new Map(
-    groupOptions.value.flatMap((group) => group.items.map((item) => [item.value, item.label] as const)),
+    groupOptions.value.flatMap((group) =>
+      group.items.map((item) => [item.value, item.label] as const),
+    ),
   );
   const pairs = props.rows
     .filter((row) =>
@@ -204,11 +232,13 @@ onBeforeUnmount(() => {
       <fieldset>
         <legend>Y axis</legend>
         <label
-          >Metric<Select
+          >Metric or calculated<Select
             v-model="yKey"
-            :options="metricOptions"
+            :options="yOptions"
             option-label="label"
-            option-value="value" /></label
+            option-value="value"
+            option-group-label="label"
+            option-group-children="items" /></label
         ><label
           >Scale<Select
             v-model="yScale"

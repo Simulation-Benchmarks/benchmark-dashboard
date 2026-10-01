@@ -30,7 +30,7 @@ export interface BenchmarkVariable {
 export interface ValueColumn {
   key: string;
   label: string;
-  kind: 'parameter' | 'metric';
+  kind: 'parameter' | 'metric' | 'calculated';
 }
 
 export interface RunValues {
