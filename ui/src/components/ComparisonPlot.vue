@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import Select from 'primevue/select';
+import MultiSelect from 'primevue/multiselect';
 import { colors } from '../lib/theme';
 import type { AnalysisRow, RunAnalysisData } from '../lib/analysis';
 
@@ -8,6 +9,7 @@ const props = defineProps<{ data: RunAnalysisData; rows: AnalysisRow[]; maximize
 const plot = ref<HTMLDivElement | null>(null);
 const xKey = ref('');
 const yKey = ref('');
+const groupKeys = ref<string[]>([]);
 const xScale = ref<'linear' | 'log'>('linear');
 const yScale = ref<'linear' | 'log'>('linear');
 const plotMessage = ref('');
@@ -25,6 +27,19 @@ const xOptions = computed(() => [
   { label: 'Parameters', items: parameterOptions.value },
   { label: 'Metrics', items: metricOptions.value },
 ]);
+const groupOptions = computed(() => [
+  {
+    label: 'Run details',
+    items: [
+      { label: 'Software', value: '__software' },
+      { label: 'Software version', value: '__software_version' },
+      { label: 'Tool', value: '__tool_name' },
+      { label: 'Run', value: '__run_id' },
+    ],
+  },
+  { label: 'Parameters', items: parameterOptions.value },
+  { label: 'Metrics', items: metricOptions.value },
+]);
 const scaleOptions = [
   { label: 'Linear', value: 'linear' },
   { label: 'Logarithmic', value: 'log' },
@@ -36,31 +51,58 @@ watch(
   () => {
     xKey.value = parameterOptions.value[0]?.value || metricOptions.value[0]?.value || '';
     yKey.value = metricOptions.value[0]?.value || '';
+    groupKeys.value = props.data.runCount > 1 ? ['__software', '__tool_name'] : [];
   },
   { immediate: true },
 );
 watch(
-  [() => props.rows, () => props.maximized, colors, xKey, yKey, xScale, yScale],
+  [() => props.rows, () => props.maximized, colors, xKey, yKey, groupKeys, xScale, yScale],
   () => void draw(),
   { deep: true },
 );
+
+function wrapLegendLabel(label: string): string {
+  const escape = (part: string) =>
+    part.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+  const lines: string[] = [];
+  let remaining = label.trim();
+  while (remaining.length > 32) {
+    const space = remaining.lastIndexOf(' ', 32);
+    const split = space > 0 ? space : 32;
+    lines.push(escape(remaining.slice(0, split)));
+    remaining = remaining.slice(split).trimStart();
+  }
+  if (remaining) lines.push(escape(remaining));
+  return lines.join('<br>');
+}
 
 async function draw(): Promise<void> {
   await nextTick();
   if (!plot.value || !xKey.value || !yKey.value) return;
   const xColumn = props.data.columns.find((column) => column.key === xKey.value);
   const yColumn = props.data.columns.find((column) => column.key === yKey.value);
+  const groupLabels = new Map(
+    groupOptions.value.flatMap((group) => group.items.map((item) => [item.value, item.label] as const)),
+  );
   const pairs = props.rows
     .filter((row) =>
       [row[xKey.value], row[yKey.value]].every(
         (value) => value !== null && value !== undefined && value !== '',
       ),
     )
-    .map((row) => ({
-      x: Number(row[xKey.value]),
-      y: Number(row[yKey.value]),
-      series: String(row['__series'] || props.data.payload.software_name || 'Run'),
-    }))
+    .map((row) => {
+      const values = groupKeys.value.map((key) => String(row[key] ?? '') || 'No value');
+      return {
+        x: Number(row[xKey.value]),
+        y: Number(row[yKey.value]),
+        seriesId: JSON.stringify(values),
+        series: groupKeys.value.length
+          ? groupKeys.value
+              .map((key, index) => `${groupLabels.get(key) || key}: ${values[index]}`)
+              .join(' · ')
+          : 'All observations',
+      };
+    })
     .filter(
       (pair) =>
         Number.isFinite(pair.x) &&
@@ -69,11 +111,12 @@ async function draw(): Promise<void> {
         (yScale.value !== 'log' || pair.y > 0),
     );
   const groups = new Map<string, typeof pairs>();
-  pairs.forEach((pair) => groups.set(pair.series, [...(groups.get(pair.series) || []), pair]));
-  const traces = [...groups.entries()].map(([name, values]) => {
+  pairs.forEach((pair) => groups.set(pair.seriesId, [...(groups.get(pair.seriesId) || []), pair]));
+  const traces = [...groups.values()].map((values) => {
+    const name = values[0].series;
     const sorted = [...values].sort((a, b) => a.x - b.x);
     return {
-      name,
+      name: wrapLegendLabel(name),
       x: sorted.map((value) => value.x),
       y: sorted.map((value) => value.y),
       type: 'scatter' as const,
@@ -88,7 +131,7 @@ async function draw(): Promise<void> {
     traces,
     {
       margin: { l: 75, r: 24, t: 25, b: 70 },
-      showlegend: traces.length > 1,
+      showlegend: groupKeys.value.length > 0 || traces.length > 1,
       hovermode: 'closest',
       paper_bgcolor: colors.value.surface,
       plot_bgcolor: colors.value.plot,
@@ -172,6 +215,20 @@ onBeforeUnmount(() => {
             :options="scaleOptions"
             option-label="label"
             option-value="value"
+        /></label>
+      </fieldset>
+      <fieldset class="plot-group-control">
+        <legend>Group by</legend>
+        <label
+          >Columns<MultiSelect
+            v-model="groupKeys"
+            :options="groupOptions"
+            option-label="label"
+            option-value="value"
+            option-group-label="label"
+            option-group-children="items"
+            placeholder="All observations"
+            display="chip"
         /></label>
       </fieldset>
     </div>

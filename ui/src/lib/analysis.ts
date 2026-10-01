@@ -42,7 +42,7 @@ export async function loadAnalysis(runs: Run[]): Promise<RunAnalysisData> {
       __software: softwareName,
       __software_version: softwareVersion || '—',
       __run_id: shortRun,
-      __series: `${softwareName}${softwareVersion ? ` ${softwareVersion}` : ''} — ${shortRun}`,
+      __tool_name: row.__tool_name,
     }));
   });
   const numeric = new Set(

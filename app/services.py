@@ -254,7 +254,10 @@ def query_run_values(run_id: str) -> dict[str, Any]:
         "query": query.strip(),
         "columns": columns,
         "rows": [
-            {column["key"]: _json_value(row.get(column["key"])) for column in columns}
+            {
+                **{column["key"]: _json_value(row.get(column["key"])) for column in columns},
+                "__tool_name": _json_value(row.get("tool_name")),
+            }
             for row in result_rows
         ],
     }

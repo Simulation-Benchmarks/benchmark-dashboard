@@ -1,14 +1,28 @@
+.plot-group-control {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.axis-groups label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
 .axis-groups {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
 }
 
 fieldset {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   gap: 0.75rem;
   padding: 1rem;
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: 0;
 }
@@ -21,16 +35,8 @@ legend {
   text-transform: uppercase;
 }
 
-.axis-groups label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  color: var(--muted);
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.p-select {
+.p-select,
+.plot-group-control .p-multiselect {
   width: 100%;
 }
 
