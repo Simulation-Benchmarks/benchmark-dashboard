@@ -169,6 +169,14 @@ function exportCsv(): void {
       <TabPanels>
         <TabPanel value="values" class="analysis-values-panel">
           <div class="actions">
+            <div class="spreadsheet-legend" aria-label="Column colors">
+              <span class="spreadsheet-legend-item parameter"
+                ><span class="spreadsheet-legend-swatch"></span>Parameters</span
+              >
+              <span class="spreadsheet-legend-item metric"
+                ><span class="spreadsheet-legend-swatch"></span>Metrics</span
+              >
+            </div>
             <div class="value-actions">
               <Button
                 label="SPARQL query"

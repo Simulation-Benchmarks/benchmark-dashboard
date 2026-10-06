@@ -117,7 +117,29 @@ function snapshot(): void {
         borderColor: dark.value ? '#c8c8c8' : sheetColor('--column-line'),
       },
       columnsCfg: Object.fromEntries(
-        usedColumns.map((column) => [column.index, { text: headerLabel(column.index) }]),
+        usedColumns.map((column) => {
+          const kind = props.data.columns.find((source) => source.key === column.key)?.kind;
+          const tint =
+            kind === 'parameter'
+              ? '--parameter-soft'
+              : kind === 'metric'
+                ? '--metric-soft'
+                : '--soft';
+          const ink =
+            kind === 'parameter' ? '--parameter' : kind === 'metric' ? '--metric' : '--text';
+          return [
+            column.index,
+            {
+              text: headerLabel(column.index),
+              textAlign: 'left' as const,
+              fontFamily: 'IBM Plex',
+              fontSize: 13,
+              fontColor: canvasColor(sheetColor(ink)),
+              backgroundColor: canvasColor(sheetColor(tint)),
+              borderColor: canvasColor(sheetColor('--column-line')),
+            },
+          ];
+        }),
       ),
     });
     displayedHeaders = nextHeaders;

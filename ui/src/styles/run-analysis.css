@@ -25,9 +25,35 @@
 .actions {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 1rem;
   margin-bottom: 0.5rem;
+}
+
+.spreadsheet-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+}
+
+.spreadsheet-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.spreadsheet-legend-swatch {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 0.2rem;
+  background: var(--parameter-soft);
+  border: 1px solid var(--parameter);
+}
+
+.spreadsheet-legend-item.metric .spreadsheet-legend-swatch {
+  background: var(--metric-soft);
+  border-color: var(--metric);
 }
 
 .value-actions {
@@ -84,6 +110,8 @@ section.univer-pointer-events-auto.univer-fixed,
 section.univer-pointer-events-auto.univer-fixed :is(button, input, textarea, select),
 .univer-popup,
 .univer-popup :is(button, input, textarea, select),
+[data-u-context-menu-submenu],
+[data-u-context-menu-submenu] :is(button, input, textarea, select),
 [data-radix-popper-content-wrapper],
 [data-radix-popper-content-wrapper] :is(button, input, textarea, select) {
   font-family: 'IBM Plex', Arial, sans-serif !important;
@@ -94,6 +122,11 @@ section.univer-pointer-events-auto.univer-fixed,
 .univer-popup,
 [data-radix-popper-content-wrapper] {
   z-index: 1200 !important;
+}
+
+/* Univer portals nested context menus to body with a lower default z-index. */
+[data-u-context-menu-submenu] {
+  z-index: 1201 !important;
 }
 
 .run-query-list {
