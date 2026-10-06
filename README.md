@@ -41,6 +41,12 @@ URL otherwise. The expanded rows show run-specific details.
 The run values dialog uses a Univer spreadsheet. Enter formulas directly in
 the grid using cell references such as `=SQRT(B2)`. Column names appear in the
 sheet header above the filter row.
+Parameter and metric columns also have worksheet-defined names, so formulas can
+refer to names such as `=SQRT(number_of_dofs)` when the name is a valid formula identifier.
+For a calculated column, assigning or changing a whole-column defined name in
+Univer's Name Manager also updates the displayed column header.
+The column header's right-click menu also offers **Rename column** for changing
+the displayed name.
 The sheet provides sorting and filtering. Edited and calculated values,
 including added columns, are available to the plot and CSV export; filters also
 apply to both. Sheet changes last until the dialog opens a different run or

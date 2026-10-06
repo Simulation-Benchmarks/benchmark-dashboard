@@ -20,23 +20,14 @@ const parameterOptions = computed(() =>
 );
 const metricOptions = computed(() =>
   props.data.columns
-    .filter((column) => column.kind === 'metric')
-    .map((column) => ({ label: column.label, value: column.key })),
-);
-const calculatedOptions = computed(() =>
-  props.data.columns
-    .filter((column) => column.kind === 'calculated')
+    .filter((column) => column.kind === 'metric' || column.kind === 'calculated')
     .map((column) => ({ label: column.label, value: column.key })),
 );
 const xOptions = computed(() => [
   { label: 'Parameters', items: parameterOptions.value },
   { label: 'Metrics', items: metricOptions.value },
-  { label: 'Calculated', items: calculatedOptions.value },
 ]);
-const yOptions = computed(() => [
-  { label: 'Metrics', items: metricOptions.value },
-  { label: 'Calculated', items: calculatedOptions.value },
-]);
+const yOptions = computed(() => [{ label: 'Metrics', items: metricOptions.value }]);
 const groupOptions = computed(() => [
   {
     label: 'Run details',
@@ -49,7 +40,6 @@ const groupOptions = computed(() => [
   },
   { label: 'Parameters', items: parameterOptions.value },
   { label: 'Metrics', items: metricOptions.value },
-  { label: 'Calculated', items: calculatedOptions.value },
 ]);
 const scaleOptions = [
   { label: 'Linear', value: 'linear' },
@@ -73,7 +63,7 @@ watch(
       xKey.value = parameterOptions.value[0]?.value || metricOptions.value[0]?.value || '';
     }
     if (!columns.some((column) => column.key === yKey.value)) {
-      yKey.value = metricOptions.value[0]?.value || calculatedOptions.value[0]?.value || '';
+      yKey.value = metricOptions.value[0]?.value || '';
     }
     const valid = new Set(
       groupOptions.value.flatMap((group) => group.items.map((item) => item.value)),
@@ -82,7 +72,17 @@ watch(
   },
 );
 watch(
-  [() => props.rows, () => props.maximized, colors, xKey, yKey, groupKeys, xScale, yScale],
+  [
+    () => props.data.columns,
+    () => props.rows,
+    () => props.maximized,
+    colors,
+    xKey,
+    yKey,
+    groupKeys,
+    xScale,
+    yScale,
+  ],
   () => void draw(),
   { deep: true },
 );

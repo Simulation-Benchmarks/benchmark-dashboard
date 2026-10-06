@@ -104,6 +104,39 @@
   min-height: 0;
 }
 
+.rename-column-form {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.rename-column-form label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.rename-column-form input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+.rename-column-form input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.rename-column-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
 .values-spreadsheet,
 .values-spreadsheet :is(button, input, textarea, select),
 section.univer-pointer-events-auto.univer-fixed,

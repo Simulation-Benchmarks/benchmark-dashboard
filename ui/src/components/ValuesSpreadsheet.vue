@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
 import { createUniver, defaultTheme, LocaleType, mergeLocales } from '@univerjs/presets';
 import { UniverSheetsCorePreset } from '@univerjs/preset-sheets-core';
 import UniverSheetsCoreEnUS from '@univerjs/preset-sheets-core/locales/en-US';
@@ -28,6 +30,10 @@ const props = defineProps<{ data: RunAnalysisData }>();
 const emit = defineEmits<{ change: [snapshot: SheetSnapshot] }>();
 const container = ref<HTMLElement | null>(null);
 const error = ref('');
+const renameDialogVisible = ref(false);
+const renameColumnIndex = ref<number | null>(null);
+const renameDraft = ref('');
+const renameInput = ref<HTMLInputElement | null>(null);
 let univer: Univer | null = null;
 let api: FUniver | null = null;
 let sheet: FWorksheet | null = null;
@@ -37,6 +43,7 @@ let headerTimer: number | undefined;
 let displayedHeaders = '';
 let headersReady = false;
 let sizedContent = '';
+let contextColumn: number | null = null;
 
 const metadata =
   props.data.runCount > 1
@@ -49,6 +56,45 @@ const metadata =
 const sourceColumns = [...metadata, ...props.data.columns];
 const sourceRowCount = props.data.rows.length;
 const namedHeaders = new Map(sourceColumns.map((column, index) => [index, column.label]));
+
+function columnLetter(index: number): string {
+  let value = index + 1;
+  let label = '';
+  while (value) {
+    value--;
+    label = String.fromCharCode(65 + (value % 26)) + label;
+    value = Math.floor(value / 26);
+  }
+  return label;
+}
+
+function registerColumnNames(): void {
+  if (!sheet) return;
+  const used = new Set<string>();
+  const validName = (name: string) =>
+    /^[A-Za-z_][A-Za-z_0-9]*$/.test(name) &&
+    !/^[A-Za-z]{1,3}[1-9]\d*$/i.test(name) &&
+    !/^R[1-9]\d*C[1-9]\d*$/i.test(name);
+
+  const register = (names: 'key' | 'label') => {
+    props.data.columns.forEach((column, offset) => {
+      const index = metadata.length + offset;
+      const reference = `Values!$${columnLetter(index)}:$${columnLetter(index)}`;
+      const name = column[names];
+      const normalized = name.trim();
+      const identity = normalized.toLowerCase();
+      if (!validName(normalized) || used.has(identity)) return;
+      try {
+        sheet?.insertDefinedName(normalized, reference);
+        used.add(identity);
+      } catch {
+        // An invalid or reserved label should not prevent the grid from loading.
+      }
+    });
+  };
+  register('key');
+  register('label');
+}
 
 function sheetColor(name: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -71,10 +117,64 @@ function styleHeaderRow(): void {
     .setFontColor(background);
 }
 
+function updateCalculatedHeaderFromName(params: {
+  unitId?: string;
+  localSheetId?: string;
+  name?: string;
+  formulaOrRefString?: string;
+}): void {
+  if (!sheet || params.unitId !== 'run-values' || !params.name || !params.formulaOrRefString)
+    return;
+  if (params.localSheetId && params.localSheetId !== sheet.getSheetId()) return;
+  try {
+    const reference = params.formulaOrRefString.replace(/^=/, '');
+    const range = sheet.getRange(reference).getRange();
+    if (
+      range.startColumn < sourceColumns.length ||
+      range.startColumn !== range.endColumn ||
+      range.startRow !== 0 ||
+      range.endRow < sheet.getMaxRows() - 1
+    )
+      return;
+    namedHeaders.set(range.startColumn, params.name);
+    scheduleSnapshot();
+  } catch {
+    // Formula-based names and references to other sheets are not column headers.
+  }
+}
+
+function renameContextColumn(): void {
+  if (!sheet) return;
+  const index = contextColumn ?? sheet.getActiveRange()?.getRange().startColumn;
+  contextColumn = null;
+  if (index === undefined || index === null || index >= sheet.getMaxColumns()) return;
+  renameColumnIndex.value = index;
+  renameDraft.value = namedHeaders.get(index) || `Column ${index + 1}`;
+  renameDialogVisible.value = true;
+}
+
+function focusRenameInput(): void {
+  renameInput.value?.focus();
+  renameInput.value?.select();
+}
+
+function saveColumnName(): void {
+  const index = renameColumnIndex.value;
+  const name = renameDraft.value.trim();
+  if (index === null || !name) return;
+  namedHeaders.set(index, name);
+  renameDialogVisible.value = false;
+  snapshot();
+}
+
 function snapshot(): void {
   if (!sheet) return;
   const lastRow = Math.max(sheet.getLastRow(), sourceRowCount);
-  const lastColumn = Math.max(sheet.getLastColumn(), sourceColumns.length - 1);
+  const lastColumn = Math.max(
+    sheet.getLastColumn(),
+    sourceColumns.length - 1,
+    ...namedHeaders.keys(),
+  );
   const values = sheet.getRange(0, 0, lastRow + 1, lastColumn + 1).getValues();
   const headerLabel = (index: number): string => namedHeaders.get(index) || `Column ${index + 1}`;
   const columns: ValueColumn[] = [];
@@ -282,6 +382,14 @@ onMounted(() => {
       },
     });
     sheet = workbook.getActiveSheet();
+    api
+      .createMenu({
+        id: 'run-values.rename-column',
+        title: 'Rename column',
+        action: renameContextColumn,
+      })
+      .appendTo(['contextMenu.colHeader', 'contextMenu.others']);
+    registerColumnNames();
     sheet.setDefaultStyle({ ff: 'IBM Plex', fs: 11, cl: { rgb: canvasColor(colors.value.text) } });
     sheet.setRowHeight(0, 24);
     styleHeaderRow();
@@ -299,6 +407,12 @@ onMounted(() => {
       api.addEvent(api.Event.SheetRangeFilterCleared, scheduleSnapshot),
       api.addEvent(api.Event.SheetRangeSorted, scheduleSnapshot),
       api.addEvent(api.Event.SheetSkeletonChanged, scheduleSnapshot),
+      api.addEvent(api.Event.ColumnHeaderPointerDown, ({ column }) => {
+        contextColumn = column;
+      }),
+      api.addEvent(api.Event.CommandExecuted, ({ id, params }) => {
+        if (id === 'formula.mutation.set-defined-name') updateCalculatedHeaderFromName(params);
+      }),
     ];
     snapshot();
     headerTimer = window.setTimeout(presentHeaders, 100);
@@ -321,6 +435,28 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="values-spreadsheet">
+    <Dialog
+      v-model:visible="renameDialogVisible"
+      header="Rename column"
+      modal
+      :style="{ width: 'min(360px, 92vw)' }"
+      @show="focusRenameInput"
+    >
+      <form class="rename-column-form" @submit.prevent="saveColumnName">
+        <label for="rename-column-name">Column name</label>
+        <input
+          id="rename-column-name"
+          ref="renameInput"
+          v-model="renameDraft"
+          autocomplete="off"
+          @keydown.esc="renameDialogVisible = false"
+        />
+        <div class="rename-column-actions">
+          <Button label="Cancel" text type="button" @click="renameDialogVisible = false" />
+          <Button label="Save" type="submit" :disabled="!renameDraft.trim()" />
+        </div>
+      </form>
+    </Dialog>
     <div v-if="error" class="analysis-state error">{{ error }}</div>
     <div
       ref="container"
