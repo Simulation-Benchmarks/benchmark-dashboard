@@ -25,7 +25,7 @@
 .actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 1rem;
   margin-bottom: 0.5rem;
 }
@@ -41,12 +41,6 @@
   display: flex;
   justify-content: flex-end;
   margin-bottom: 0.5rem;
-}
-
-.spreadsheet-hint {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.85rem;
 }
 
 .analysis-values-tabs {
@@ -82,47 +76,6 @@
 .values-spreadsheet-editor {
   flex: 1;
   min-height: 0;
-}
-
-.calculated-column-form {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  padding: 0.4rem;
-  border-bottom: 1px solid var(--line);
-}
-
-.calculated-column-form input {
-  min-width: 9rem;
-  flex: 1;
-  padding: 0.35rem 0.5rem;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--text);
-}
-
-.calculated-column-form input:nth-child(2) {
-  flex: 2;
-}
-
-.calculated-column-form button {
-  padding: 0.35rem 0.65rem;
-  border: 1px solid var(--text);
-  background: var(--text);
-  color: var(--surface);
-  cursor: pointer;
-}
-
-.calculated-column-form button:disabled {
-  opacity: 0.5;
-  cursor: wait;
-}
-
-.calculated-column-error {
-  width: 100%;
-  color: var(--danger);
-  font-size: 0.8rem;
 }
 
 .values-spreadsheet,
@@ -194,10 +147,4 @@ section.univer-pointer-events-auto.univer-fixed,
 
 .values-grid.maximized {
   min-height: 0;
-}
-
-@media (max-height: 650px) {
-  .spreadsheet-hint {
-    display: none;
-  }
 }

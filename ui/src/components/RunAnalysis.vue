@@ -169,10 +169,6 @@ function exportCsv(): void {
       <TabPanels>
         <TabPanel value="values" class="analysis-values-panel">
           <div class="actions">
-            <p class="spreadsheet-hint">
-              Add a named formula column below. Use row 2 references such as <code>=SQRT(P2)</code>;
-              the formula fills down automatically. Use the dropdowns to sort or filter.
-            </p>
             <div class="value-actions">
               <Button
                 label="SPARQL query"

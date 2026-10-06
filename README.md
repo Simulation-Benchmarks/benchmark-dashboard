@@ -38,8 +38,9 @@ name and version from its run's named graph. The group name links to the graph's
 software URL when a version is present, or to the run's `prov:used` annotation
 URL otherwise. The expanded rows show run-specific details.
 
-The run values dialog uses a Univer spreadsheet. Add a calculated column with a
-name and formula such as `=SQRT(B2)`; the formula fills down automatically.
+The run values dialog uses a Univer spreadsheet. Enter formulas directly in
+the grid using cell references such as `=SQRT(B2)`. Column names appear in the
+sheet header above the filter row.
 The sheet provides sorting and filtering. Edited and calculated values,
 including added columns, are available to the plot and CSV export; filters also
 apply to both. Sheet changes last until the dialog opens a different run or

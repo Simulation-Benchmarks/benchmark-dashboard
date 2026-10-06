@@ -28,10 +28,6 @@ const props = defineProps<{ data: RunAnalysisData }>();
 const emit = defineEmits<{ change: [snapshot: SheetSnapshot] }>();
 const container = ref<HTMLElement | null>(null);
 const error = ref('');
-const addingColumn = ref(false);
-const columnName = ref('');
-const columnFormula = ref('');
-const columnError = ref('');
 let univer: Univer | null = null;
 let api: FUniver | null = null;
 let sheet: FWorksheet | null = null;
@@ -40,14 +36,14 @@ let syncTimer: number | undefined;
 let headerTimer: number | undefined;
 let displayedHeaders = '';
 let headersReady = false;
+let sizedContent = '';
 
 const metadata =
   props.data.runCount > 1
     ? [
         { key: '__software', label: 'Software' },
-        { key: '__software_version', label: 'Software version' },
+        { key: '__software_version', label: 'Version' },
         { key: '__run_id', label: 'Run' },
-        { key: '__tool_name', label: 'Tool' },
       ]
     : [{ key: '__tool_name', label: 'Tool' }];
 const sourceColumns = [...metadata, ...props.data.columns];
@@ -67,7 +63,7 @@ function canvasColor(color: string): string {
 
 function styleHeaderRow(): void {
   if (!sheet) return;
-  // Univer draws dark-mode filter icons in black, so the control row stays light.
+  // Univer draws dark-mode filter icons in black, so the filter row stays light.
   const background = dark.value ? '#303030' : sheetColor('--soft');
   sheet
     .getRange(0, 0, 1, Math.max(sourceColumns.length + 12, 26))
@@ -80,22 +76,14 @@ function snapshot(): void {
   const lastRow = Math.max(sheet.getLastRow(), sourceRowCount);
   const lastColumn = Math.max(sheet.getLastColumn(), sourceColumns.length - 1);
   const values = sheet.getRange(0, 0, lastRow + 1, lastColumn + 1).getValues();
-  const headers = values[0] || [];
-  const headerLabel = (index: number): string => {
-    const value = String(headers[index] ?? '').trim();
-    if (value) {
-      namedHeaders.set(index, value);
-      return value;
-    }
-    return namedHeaders.get(index) || `Column ${index + 1}`;
-  };
+  const headerLabel = (index: number): string => namedHeaders.get(index) || `Column ${index + 1}`;
   const columns: ValueColumn[] = [];
   const usedColumns = sourceColumns.map((source, index) => ({
     ...source,
     index,
   }));
   for (let index = sourceColumns.length; index <= lastColumn; index++) {
-    const heading = String(headers[index] ?? '').trim();
+    const heading = namedHeaders.get(index);
     if (
       !heading &&
       !values
@@ -129,34 +117,32 @@ function snapshot(): void {
         borderColor: dark.value ? '#c8c8c8' : sheetColor('--column-line'),
       },
       columnsCfg: Object.fromEntries(
-        headerLabels.map((label, index) => {
-          const kind = props.data.columns.find(
-            (column) => column.key === usedColumns[index].key,
-          )?.kind;
-          const tint =
-            kind === 'parameter'
-              ? '--parameter-soft'
-              : kind === 'metric'
-                ? '--metric-soft'
-                : '--soft';
-          const ink =
-            kind === 'parameter' ? '--parameter' : kind === 'metric' ? '--metric' : '--text';
-          return [
-            index,
-            {
-              text: label,
-              textAlign: 'left' as const,
-              fontFamily: 'IBM Plex',
-              fontSize: 13,
-              fontColor: dark.value ? '#111111' : sheetColor(ink),
-              backgroundColor: dark.value ? '#e9e9e9' : sheetColor(tint),
-              borderColor: dark.value ? '#c8c8c8' : sheetColor('--column-line'),
-            },
-          ];
-        }),
+        usedColumns.map((column) => [column.index, { text: headerLabel(column.index) }]),
       ),
     });
     displayedHeaders = nextHeaders;
+  }
+  if (headersReady) {
+    const content = JSON.stringify(
+      usedColumns.map((column) => [
+        headerLabel(column.index),
+        ...values.slice(1).map((row) => row[column.index]),
+      ]),
+    );
+    if (content !== sizedContent) {
+      sizedContent = content;
+      const context = document.createElement('canvas').getContext('2d');
+      if (context) context.font = '13px IBM Plex';
+      for (const column of usedColumns) {
+        sheet.autoResizeColumns(column.index);
+        const titleWidth = context?.measureText(headerLabel(column.index)).width ?? 0;
+        const width = Math.min(
+          480,
+          Math.max(72, sheet.getColumnWidth(column.index), Math.ceil(titleWidth + 28)),
+        );
+        sheet.setColumnWidth(column.index, width);
+      }
+    }
   }
   const filtered = new Set(sheet.getFilter()?.getFilteredOutRows() || []);
   const rows: AnalysisRow[] = [];
@@ -170,59 +156,6 @@ function snapshot(): void {
     if (!filtered.has(index)) visibleRows.push(row);
   }
   emit('change', { columns, rows, visibleRows });
-}
-
-function nextEmptyColumn(): number {
-  if (!sheet) return sourceColumns.length;
-  for (let index = sourceColumns.length; index < sheet.getMaxColumns(); index++) {
-    const range = sheet.getRange(0, index, sourceRowCount + 1, 1);
-    const occupied = range
-      .getValues()
-      .some((row) => row[0] !== null && row[0] !== undefined && row[0] !== '');
-    const hasFormula = range.getFormulas().some((row) => Boolean(row[0]));
-    if (!occupied && !hasFormula) return index;
-  }
-  return sheet.getMaxColumns();
-}
-
-async function addCalculatedColumn(): Promise<void> {
-  if (!sheet || addingColumn.value) return;
-  const name = columnName.value.trim();
-  const expression = columnFormula.value.trim();
-  if (!name || !expression) {
-    columnError.value = 'Enter a column name and a formula.';
-    return;
-  }
-  if (!sourceRowCount) {
-    columnError.value = 'There are no data rows to calculate.';
-    return;
-  }
-  const formula = expression.startsWith('=') ? expression : `=${expression}`;
-  // In a calculated column, a whole-column reference means the cell in the current row.
-  const firstFormula = formula.replace(/\b([A-Z]+):\1\b/gi, (_, column: string) => `${column}2`);
-  const index = nextEmptyColumn();
-  addingColumn.value = true;
-  columnError.value = '';
-  try {
-    if (index >= sheet.getMaxColumns()) sheet.setColumnCount(index + 12);
-    sheet.getRange(0, index).setValue(name);
-    sheet.setColumnWidth(index, 160);
-    const firstCell = sheet.getRange(1, index);
-    firstCell.setFormula(firstFormula);
-    if (sourceRowCount > 1) {
-      const filled = await firstCell.autoFill(sheet.getRange(1, index, sourceRowCount, 1));
-      if (!filled) throw new Error('Could not fill the formula down the column.');
-    }
-    namedHeaders.set(index, name);
-    columnName.value = '';
-    columnFormula.value = '';
-    scheduleSnapshot();
-  } catch (cause) {
-    sheet.getRange(0, index, sourceRowCount + 1, 1).clearContent();
-    columnError.value = cause instanceof Error ? cause.message : 'Could not add the column.';
-  } finally {
-    addingColumn.value = false;
-  }
 }
 
 function scheduleSnapshot(): void {
@@ -246,7 +179,6 @@ function presentHeaders(attempt = 0): void {
       rowsCfg: { 0: 'Filter' },
     });
     headersReady = true;
-    displayedHeaders = '';
     snapshot();
   } catch {
     if (attempt < 10) headerTimer = window.setTimeout(() => presentHeaders(attempt + 1), 100);
@@ -257,7 +189,9 @@ watch(dark, (enabled) => {
   api?.toggleDarkMode(enabled);
   sheet?.setDefaultStyle({ ff: 'IBM Plex', fs: 11, cl: { rgb: canvasColor(colors.value.text) } });
   styleHeaderRow();
-  if (headersReady) presentHeaders();
+  displayedHeaders = '';
+  sizedContent = '';
+  presentHeaders();
 });
 
 onMounted(() => {
@@ -298,9 +232,6 @@ onMounted(() => {
     univer = instance.univer;
     api = instance.univerAPI;
     const cellData: Record<number, Record<number, { v: string | number | boolean }>> = {};
-    cellData[0] = Object.fromEntries(
-      sourceColumns.map((column, index) => [index, { v: column.label }]),
-    );
     props.data.rows.forEach((row, rowIndex) => {
       cellData[rowIndex + 1] = Object.fromEntries(
         sourceColumns.flatMap((column, columnIndex) => {
@@ -332,8 +263,13 @@ onMounted(() => {
     sheet.setDefaultStyle({ ff: 'IBM Plex', fs: 11, cl: { rgb: canvasColor(colors.value.text) } });
     sheet.setRowHeight(0, 24);
     styleHeaderRow();
-    sheet.setFreeze({ startRow: 1, startColumn: 0, xSplit: 0, ySplit: 1 });
-    sourceColumns.forEach((_, index) => sheet?.setColumnWidth(index, 160));
+    const frozenColumns = props.data.runCount > 1 ? metadata.length : 0;
+    sheet.setFreeze({
+      startRow: 1,
+      startColumn: frozenColumns,
+      xSplit: frozenColumns,
+      ySplit: 1,
+    });
     if (sourceRowCount) sheet.getRange(0, 0, sourceRowCount + 1, columnCount).createFilter();
     subscriptions = [
       api.addEvent(api.Event.SheetValueChanged, scheduleSnapshot),
@@ -363,16 +299,6 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="values-spreadsheet">
-    <form class="calculated-column-form" @submit.prevent="addCalculatedColumn">
-      <input v-model="columnName" aria-label="New column name" placeholder="Column name" />
-      <input
-        v-model="columnFormula"
-        aria-label="New column formula"
-        placeholder="Formula, e.g. =SQRT(P2)"
-      />
-      <button type="submit" :disabled="addingColumn">Add column</button>
-      <span v-if="columnError" class="calculated-column-error" role="alert">{{ columnError }}</span>
-    </form>
     <div v-if="error" class="analysis-state error">{{ error }}</div>
     <div
       ref="container"

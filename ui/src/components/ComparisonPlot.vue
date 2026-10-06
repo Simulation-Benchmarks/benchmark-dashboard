@@ -62,7 +62,7 @@ watch(
   () => {
     xKey.value = parameterOptions.value[0]?.value || metricOptions.value[0]?.value || '';
     yKey.value = metricOptions.value[0]?.value || '';
-    groupKeys.value = props.data.runCount > 1 ? ['__software', '__tool_name'] : [];
+    groupKeys.value = props.data.runCount > 1 ? ['__software'] : [];
   },
   { immediate: true },
 );
