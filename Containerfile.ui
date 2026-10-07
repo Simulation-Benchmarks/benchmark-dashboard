@@ -1,4 +1,4 @@
-FROM node:24-alpine AS build
+FROM node:24.21.0-alpine3.24 AS build
 
 WORKDIR /ui
 
@@ -8,9 +8,10 @@ RUN npm ci
 COPY ui/ ./
 RUN CI=1 npm run build
 
-FROM nginx:1.29-alpine-slim
 
-RUN apk update && apk upgrade --no-cache
+FROM nginx:1.30.5-alpine3.24-slim
+
+RUN apk upgrade --no-cache
 
 ENV SERVICE_HOST=service \
     SERVICE_PORT=8000
