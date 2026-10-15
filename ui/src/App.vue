@@ -14,29 +14,54 @@ const benchmarks = ref<Benchmark[]>([]);
 const runs = ref<Run[]>([]);
 const selectedBenchmarkUrl = ref('');
 const publishedRuns = computed(() =>
-  runs.value.filter((run) => run.benchmark_url === selectedBenchmarkUrl.value),
+  selectedBenchmarkUrl.value
+    ? runs.value.filter((run) => run.benchmark_url === selectedBenchmarkUrl.value)
+    : runs.value,
 );
-const loading = ref(true);
-const error = ref('');
+const benchmarkLoading = ref(true);
+const runsLoading = ref(true);
+const benchmarkError = ref('');
+const runsError = ref('');
 const updated = ref('');
 const analysis = ref<InstanceType<typeof RunAnalysis> | null>(null);
+let requestId = 0;
 
 async function load(refresh = false): Promise<void> {
-  loading.value = true;
-  error.value = '';
-  try {
-    const [benchmarkResponse, runResponse] = await Promise.all([
-      api.benchmarks(refresh),
-      api.runs(refresh),
-    ]);
-    benchmarks.value = benchmarkResponse.items;
-    runs.value = runResponse.items;
-    updated.value = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : 'The runs could not be loaded.';
-  } finally {
-    loading.value = false;
-  }
+  const currentRequest = ++requestId;
+  benchmarkLoading.value = true;
+  runsLoading.value = true;
+  benchmarkError.value = '';
+  runsError.value = '';
+
+  await Promise.all([
+    api
+      .benchmarks(refresh)
+      .then((response) => {
+        if (currentRequest === requestId) benchmarks.value = response.items;
+      })
+      .catch((cause) => {
+        if (currentRequest === requestId)
+          benchmarkError.value =
+            cause instanceof Error ? cause.message : 'Benchmarks could not be loaded.';
+      })
+      .finally(() => {
+        if (currentRequest === requestId) benchmarkLoading.value = false;
+      }),
+    api
+      .runs(refresh)
+      .then((response) => {
+        if (currentRequest !== requestId) return;
+        runs.value = response.items;
+        updated.value = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      })
+      .catch((cause) => {
+        if (currentRequest === requestId)
+          runsError.value = cause instanceof Error ? cause.message : 'Runs could not be loaded.';
+      })
+      .finally(() => {
+        if (currentRequest === requestId) runsLoading.value = false;
+      }),
+  ]);
 }
 
 onMounted(() => void load());
@@ -61,21 +86,21 @@ onMounted(() => void load());
   </header>
 
   <main>
-    <div v-if="error" class="state error">{{ error }}</div>
-    <template v-else>
-      <BenchmarkCatalog
-        :benchmarks="benchmarks"
-        :loading="loading"
-        @select="selectedBenchmarkUrl = $event?.benchmark_url || ''"
-      />
-      <PublishedRuns
-        :runs="publishedRuns"
-        :loading="loading"
-        :updated="updated"
-        @refresh="load(true)"
-        @analyze="analysis?.open($event)"
-      />
-    </template>
+    <BenchmarkCatalog
+      :benchmarks="benchmarks"
+      :loading="benchmarkLoading"
+      :error="benchmarkError"
+      @select="selectedBenchmarkUrl = $event?.benchmark_url || ''"
+    />
+    <PublishedRuns
+      :runs="publishedRuns"
+      :loading="runsLoading"
+      :error="runsError"
+      :benchmark-selected="Boolean(selectedBenchmarkUrl)"
+      :updated="updated"
+      @refresh="load(true)"
+      @analyze="analysis?.open($event)"
+    />
   </main>
 
   <RunAnalysis ref="analysis" />

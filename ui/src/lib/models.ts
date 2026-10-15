@@ -11,6 +11,7 @@ export interface Run {
   title: string | null;
   benchmark_url: string;
   benchmark_title: string;
+  version: string | null;
   branch_url: string | null;
   graph: string | null;
   software_name: string | null;

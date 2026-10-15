@@ -17,7 +17,7 @@ import MetadataTable from './MetadataTable.vue';
 
 type BenchmarkRow = Benchmark & { benchmark_group_key: string };
 
-const props = defineProps<{ benchmarks: Benchmark[]; loading: boolean }>();
+const props = defineProps<{ benchmarks: Benchmark[]; loading: boolean; error: string }>();
 const emit = defineEmits<{ select: [benchmark: Benchmark | null] }>();
 function benchmarkName(benchmark: Benchmark): string {
   const title = benchmark.benchmark_title.trim();
@@ -112,6 +112,7 @@ function jupyterUrl(repository: string | null): string | null {
 <template>
   <section class="section-block">
     <div class="section-heading"><h2 class="section-title">Benchmarks</h2></div>
+    <p v-if="error && benchmarks.length" class="grid-error" role="alert">{{ error }}</p>
     <div class="grid-loading-wrapper benchmark-wrapper" :class="{ 'is-loading': loading }">
       <DataTable
         v-model:selection="selected"
@@ -205,6 +206,10 @@ function jupyterUrl(repository: string | null): string | null {
               }}
             </span>
           </div>
+        </template>
+        <template #empty>
+          <span v-if="error" class="error" role="alert">{{ error }}</span>
+          <span v-else>No benchmarks are available.</span>
         </template>
       </DataTable>
       <div v-if="loading" class="grid-loading-overlay">

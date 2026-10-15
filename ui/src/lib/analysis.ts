@@ -17,7 +17,13 @@ export interface RunAnalysisData {
 
 export async function loadAnalysis(runs: Run[]): Promise<RunAnalysisData> {
   const responses = await Promise.all(runs.map((run) => api.runValues(run.run_id)));
-  const benchmarkLabel = runs[0]?.benchmark_title || 'Benchmark';
+  const benchmarkTitle = runs[0]?.benchmark_title?.trim() || 'Benchmark';
+  const benchmarkVersion = runs[0]?.version?.trim();
+  const versionSuffix = benchmarkVersion ? ` (version ${benchmarkVersion})` : '';
+  const benchmarkLabel =
+    versionSuffix && !benchmarkTitle.endsWith(versionSuffix)
+      ? `${benchmarkTitle}${versionSuffix}`
+      : benchmarkTitle;
   const columnsByKey = new Map<string, ValueColumn>();
   for (const response of responses) {
     for (const column of response.columns) {

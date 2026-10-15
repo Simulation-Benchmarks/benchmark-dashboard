@@ -16,7 +16,13 @@ interface Group {
   count: number;
 }
 
-const props = defineProps<{ runs: Run[]; loading: boolean; updated: string }>();
+const props = defineProps<{
+  runs: Run[];
+  loading: boolean;
+  error: string;
+  benchmarkSelected: boolean;
+  updated: string;
+}>();
 const emit = defineEmits<{ refresh: []; analyze: [runs: Run[]] }>();
 const mainBranchOnly = ref(true);
 const search = ref('');
@@ -49,6 +55,13 @@ const groupedRuns = computed<RunRow[]>(() => {
     bySoftware.set(software_group_key, group);
   }
   return [...bySoftware.values()].flat();
+});
+const emptyMessage = computed(() => {
+  if (props.error) return props.error;
+  if (props.runs.length) return 'No runs match the current filters.';
+  return props.benchmarkSelected
+    ? 'This benchmark has no published runs yet.'
+    : 'No published runs are available.';
 });
 const groups = computed(() => {
   const result = new Map<string, Group>();
@@ -98,6 +111,7 @@ function openRun(event: { data: RunRow; originalEvent: Event }): void {
 <template>
   <section class="section-block">
     <div class="section-heading"><h2 class="section-title">Published runs</h2></div>
+    <p v-if="error && runs.length" class="grid-error" role="alert">{{ error }}</p>
     <div class="toolbar">
       <span class="search"
         ><i class="pi pi-search"></i
@@ -221,7 +235,9 @@ function openRun(event: { data: RunRow; originalEvent: Event }): void {
             >
           </div>
         </template>
-        <template #empty>No published runs match the current filters.</template>
+        <template #empty>
+          <span :class="{ error }" :role="error ? 'alert' : undefined">{{ emptyMessage }}</span>
+        </template>
       </DataTable>
       <div v-if="loading" class="grid-loading-overlay">
         <ProgressSpinner aria-label="Loading published runs" />

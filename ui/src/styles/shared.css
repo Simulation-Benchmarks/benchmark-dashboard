@@ -51,6 +51,11 @@ small {
   min-height: 120px;
 }
 
+.grid-error {
+  margin: 0 0 1rem;
+  color: var(--danger);
+}
+
 :is(.benchmark-wrapper, .runs-wrapper) {
   min-height: 0;
 }
