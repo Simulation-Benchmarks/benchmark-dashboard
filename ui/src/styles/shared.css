@@ -75,6 +75,7 @@ small {
   height: 32px;
   border-radius: 0;
   color: var(--accent);
+  text-decoration: none;
 }
 
 .grid-action:hover {

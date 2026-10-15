@@ -141,22 +141,6 @@ function jupyterUrl(repository: string | null): string | null {
             </button>
           </template>
         </Column>
-        <Column header="Research problem" header-style="width: 150px">
-          <template #body="slot">
-            <a
-              v-if="slot.data.research_problem_uri"
-              class="grid-action research-problem-action"
-              :href="slot.data.research_problem_uri"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Open research problem"
-              aria-label="Open research problem"
-              @click.stop
-            >
-              <i class="fa-regular fa-pencil" aria-hidden="true"></i>
-            </a>
-          </template>
-        </Column>
         <Column header="Source" header-style="width: 95px">
           <template #body="slot">
             <a
