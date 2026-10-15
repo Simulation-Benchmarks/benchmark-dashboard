@@ -127,7 +127,7 @@ function jupyterUrl(repository: string | null): string | null {
         @row-select="selectRun($event.data)"
       >
         <Column selection-mode="single" header-style="width: 48px" />
-        <Column field="version" header="Version" header-style="width: 140px" />
+        <Column field="version" header="Benchmark Version" header-style="width: 200px" />
         <Column header="Metadata" header-style="width: 110px">
           <template #body="slot">
             <button
@@ -197,7 +197,7 @@ function jupyterUrl(repository: string | null): string | null {
         </Column>
         <template #groupheader="slot">
           <div class="benchmark-group-content">
-            <span>{{ slot.data.benchmark_group_key }}</span>
+            <strong class="benchmark-group-title">{{ slot.data.benchmark_group_key }}</strong>
             <span class="benchmark-group-count">
               {{ benchmarkGroups.get(slot.data.benchmark_group_key) }}
               {{

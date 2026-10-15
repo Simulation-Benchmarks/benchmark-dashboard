@@ -29,8 +29,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 38px;
+  min-height: 34px;
   padding-left: 42px;
+}
+.benchmark-group-title {
+  font-size: 15px;
   font-weight: 700;
 }
 .benchmark-group-count {
@@ -38,8 +41,8 @@
   font-size: 13px;
   font-weight: 400;
 }
-.benchmark-grid .p-datatable-thead > tr > th,
-.benchmark-grid .p-datatable-tbody > tr:not(.p-datatable-row-group-header) > td,
+.benchmark-grid .p-datatable-thead > tr > th:not(:nth-child(2)),
+.benchmark-grid .p-datatable-tbody > tr:not(.p-datatable-row-group-header) > td:not(:nth-child(2)),
 .runs-grid
   .p-datatable-thead
   > tr
@@ -50,7 +53,7 @@
   > td:is(:first-child, :nth-child(4), :nth-child(5), :nth-child(6)) {
   text-align: center;
 }
-.benchmark-grid .p-datatable-thead > tr > th .p-datatable-column-header-content,
+.benchmark-grid .p-datatable-thead > tr > th:not(:nth-child(2)) .p-datatable-column-header-content,
 .runs-grid
   .p-datatable-thead
   > tr

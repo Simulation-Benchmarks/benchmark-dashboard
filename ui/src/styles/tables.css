@@ -5,6 +5,10 @@
   border-radius: 0;
 }
 
+:is(.benchmark-grid, .runs-grid) {
+  font-size: 14px;
+}
+
 :is(.benchmark-grid, .runs-grid, .metadata-grid, .values-table) .p-datatable-thead > tr > th {
   border-bottom: 2px solid var(--text);
   font-weight: 700;
@@ -16,11 +20,13 @@
 }
 
 :is(.benchmark-grid, .runs-grid) .p-datatable-thead > tr > th {
-  padding-block: 0.65rem;
+  padding-block: 0.5rem;
+  padding-inline: 0.55rem;
 }
 
 :is(.benchmark-grid, .runs-grid) .p-datatable-tbody > tr:not(.p-datatable-row-group-header) > td {
-  padding-block: 0.35rem;
+  padding-block: 0.2rem;
+  padding-inline: 0.55rem;
 }
 
 :is(.benchmark-grid, .runs-grid)
