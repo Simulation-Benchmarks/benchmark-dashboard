@@ -1,6 +1,7 @@
 @import 'primeicons/primeicons.css';
 @import '@fortawesome/fontawesome-free/css/fontawesome.css';
 @import '@fortawesome/fontawesome-free/css/brands.css';
+@import '@fortawesome/fontawesome-free/css/solid.css';
 
 @font-face {
   font-family: 'IBM Plex';
@@ -29,7 +30,7 @@
 :root {
   color-scheme: light;
   font-family: 'IBM Plex', Arial, sans-serif;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 400;
   line-height: 1.4;
   --app-bg: #ffffff;

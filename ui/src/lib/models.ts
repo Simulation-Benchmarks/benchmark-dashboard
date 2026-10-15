@@ -1,19 +1,22 @@
+export interface Benchmark {
+  benchmark_url: string;
+  benchmark_title: string;
+  research_problem_uri: string;
+  version: string | null;
+  repo: string | null;
+}
+
 export interface Run {
   run_id: string;
   title: string | null;
   benchmark_url: string;
-  benchmark_repo: string;
+  benchmark_title: string;
   branch_url: string | null;
   graph: string | null;
-  graph_valid: boolean;
   software_name: string | null;
   software_url: string | null;
   software_version: string | null;
   datePublished: string | null;
-  version: string | null;
-  benchmark: string;
-  parameters: BenchmarkVariable[];
-  metrics: BenchmarkVariable[];
 }
 
 export interface BenchmarkMetadata {
@@ -34,13 +37,9 @@ export interface ValueColumn {
 }
 
 export interface RunValues {
-  run_id?: string;
-  software_name: string | null;
-  benchmark: string;
   query?: string;
   columns: ValueColumn[];
   rows: Record<string, unknown>[];
-  run_count?: number;
 }
 
 export interface SparqlEntry {

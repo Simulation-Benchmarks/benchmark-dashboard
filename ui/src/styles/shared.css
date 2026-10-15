@@ -31,7 +31,7 @@ small {
 
 .section-heading span {
   color: var(--muted);
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.4;
 }
 
@@ -39,7 +39,7 @@ small {
   margin: 0;
   color: var(--text);
   font-family: 'IBM Plex', Arial, sans-serif;
-  font-size: 30px;
+  font-size: 28px;
   font-weight: 700;
   line-height: 1.1;
   letter-spacing: 0.2px;
@@ -49,6 +49,10 @@ small {
 .grid-loading-wrapper {
   position: relative;
   min-height: 120px;
+}
+
+:is(.benchmark-wrapper, .runs-wrapper) {
+  min-height: 0;
 }
 
 .grid-loading-overlay {
@@ -61,11 +65,6 @@ small {
   background: color-mix(in srgb, var(--surface) 72%, transparent);
   backdrop-filter: blur(1px);
   cursor: wait;
-}
-
-.benchmark-name {
-  font-weight: 700;
-  text-transform: capitalize;
 }
 
 .grid-action {
@@ -82,7 +81,13 @@ small {
   background: var(--soft);
 }
 
-.grid-action:is(.source-action, .rohub-action, .graph-action, .notebook-action):hover {
+.grid-action:is(
+    .source-action,
+    .rohub-action,
+    .graph-action,
+    .notebook-action,
+    .research-problem-action
+  ):hover {
   background: transparent;
 }
 
@@ -95,6 +100,10 @@ small {
 
 .github-icon {
   font-size: 22px;
+}
+
+.research-problem-action .fa-solid {
+  font-size: 20px;
 }
 
 .graph-action .pi {

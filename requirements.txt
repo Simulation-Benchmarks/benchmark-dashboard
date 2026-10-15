@@ -1,7 +1,6 @@
 fastapi
 pandas
 python-dotenv
-rdflib
 rohub
-semantic-benchmark
+git+https://github.com/Simulation-Benchmarks/semantic-benchmark.git@30-support-for-benchmark-versioning
 uvicorn[standard]

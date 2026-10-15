@@ -1,4 +1,4 @@
-import type { BenchmarkMetadata, Run, RunValues, SparqlEntry } from './models';
+import type { Benchmark, BenchmarkMetadata, Run, RunValues, SparqlEntry } from './models';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(path, options);
@@ -25,17 +25,16 @@ function cachedMetadata(key: string, path: string): Promise<BenchmarkMetadata> {
 }
 
 export const api = {
+  benchmarks: (refresh = false) =>
+    request<{ items: Benchmark[]; count: number }>(
+      `/api/benchmarks${refresh ? '?refresh=true' : ''}`,
+    ),
   runs: (refresh = false) =>
     request<{ items: Run[]; count: number }>(`/api/runs${refresh ? '?refresh=true' : ''}`),
   runValues: (runId: string) =>
     request<RunValues>(`/api/run-values?run_id=${encodeURIComponent(runId)}`),
-  runMetadata: (runId: string) =>
-    cachedMetadata(`run:${runId}`, `/api/run-metadata?run_id=${encodeURIComponent(runId)}`),
   benchmarkMetadata: (url: string) =>
-    cachedMetadata(
-      `benchmark:${url}`,
-      `/api/benchmark-metadata?benchmark_url=${encodeURIComponent(url)}`,
-    ),
+    cachedMetadata(url, `/api/benchmark-metadata?benchmark_url=${encodeURIComponent(url)}`),
   sparqlLog: () => request<{ items: SparqlEntry[]; count: number }>('/api/sparql-log'),
   clearSparqlLog: () => request<void>('/api/sparql-log', { method: 'DELETE' }),
 };

@@ -11,7 +11,8 @@ export default defineConfig({
           warning.code === 'MODULE_LEVEL_DIRECTIVE' &&
           warning.message.includes('"use client"') &&
           /node_modules\/(?:@radix-ui\/|cmdk\/|sonner\/)/.test(warning.id ?? '')
-        ) return;
+        )
+          return;
         defaultHandler(warning);
       },
     },

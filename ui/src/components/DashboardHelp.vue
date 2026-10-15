@@ -32,7 +32,7 @@ const steps: TourStep[] = [
     selector: '.search',
     title: 'Find published runs',
     description:
-      'Search by software, version, repository, branch, or publication date. The branch menu beside it switches between main-branch and all runs.',
+      'Search by software, version, repository, branch, or publication date. Turn off Latest Release to show all runs.',
   },
   {
     selector: '.runs-grid',
@@ -200,8 +200,8 @@ onBeforeUnmount(() => {
         <article class="help-card">
           <h4>3. Explore published runs</h4>
           <p>
-            Search by software, version, repository, branch, or date. Switch between main-branch and
-            all runs, expand software groups, and open source, RoHub, or named graph links.
+            Search by software, version, repository, branch, or date. Turn off Latest Release to
+            show all runs, expand software groups, and open source, RoHub, or named graph links.
           </p>
         </article>
         <article class="help-card">

@@ -8,8 +8,38 @@
   background: color-mix(in srgb, var(--soft) 82%, var(--parameter-soft));
   color: var(--text);
 }
-.benchmark-grid .p-datatable-thead > tr > th:is(:first-child, :nth-child(n + 3)),
-.benchmark-grid .p-datatable-tbody > tr > td:is(:first-child, :nth-child(n + 3)),
+.benchmark-grid .p-datatable-row-group-header > td {
+  position: relative;
+  background: var(--soft);
+  border-top: 1px solid var(--text);
+}
+.benchmark-grid .p-datatable-row-toggle-button {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+}
+.benchmark-group-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 38px;
+  padding-left: 42px;
+  font-weight: 700;
+}
+.benchmark-group-count {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+.benchmark-grid .p-datatable-thead > tr > th,
+.benchmark-grid .p-datatable-tbody > tr:not(.p-datatable-row-group-header) > td,
 .runs-grid
   .p-datatable-thead
   > tr
@@ -20,11 +50,7 @@
   > td:is(:first-child, :nth-child(4), :nth-child(5), :nth-child(6)) {
   text-align: center;
 }
-.benchmark-grid
-  .p-datatable-thead
-  > tr
-  > th:is(:first-child, :nth-child(n + 3))
-  .p-datatable-column-header-content,
+.benchmark-grid .p-datatable-thead > tr > th .p-datatable-column-header-content,
 .runs-grid
   .p-datatable-thead
   > tr

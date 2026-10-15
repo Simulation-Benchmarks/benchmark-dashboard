@@ -3,11 +3,21 @@ export function resourceLabel(url?: string | null): string {
   return url.replace(/\/$/, '').split('/').at(-1)?.replaceAll('-', ' ') || url;
 }
 
+export function repositoryUrl(branchUrl?: string | null): string | null {
+  if (!branchUrl) return null;
+  const treeIndex = branchUrl.indexOf('/tree/');
+  return treeIndex === -1 ? branchUrl : branchUrl.slice(0, treeIndex);
+}
+
+function publishedDate(value: string): Date {
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
+  return new Date(dateOnly ? `${value}T00:00:00Z` : value);
+}
+
 export function formatPublishedDate(value?: string | null): string {
   if (!value) return '—';
-
+  const date = publishedDate(value);
   const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
-  const date = new Date(dateOnly ? `${value}T00:00:00Z` : value);
 
   if (Number.isNaN(date.getTime())) return value;
 
@@ -28,7 +38,7 @@ export function formatPublishedDate(value?: string | null): string {
 export function formatPublishedDateTooltip(value?: string | null): string {
   if (!value) return 'No publication date';
   const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
-  const date = new Date(dateOnly ? `${value}T00:00:00Z` : value);
+  const date = publishedDate(value);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: 'full',

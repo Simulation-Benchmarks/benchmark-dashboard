@@ -89,7 +89,7 @@ async function open(runs: Run[]): Promise<void> {
     const result = await loadAnalysis(runs);
     if (current !== requestId) return;
     analysis.value = result;
-    title.value = result.payload.benchmark || 'Parameters and metrics';
+    title.value = result.benchmark;
   } catch (cause) {
     if (current !== requestId) return;
     error.value = cause instanceof Error ? cause.message : 'Run values could not be loaded.';
@@ -120,7 +120,7 @@ function exportCsv(): void {
     columns.map((column) => escape(column.label)).join(','),
     ...filteredRows.value.map((row) => columns.map((column) => escape(row[column.key])).join(',')),
   ].join('\r\n');
-  const name = (analysis.value.payload.benchmark || 'benchmark-values')
+  const name = analysis.value.benchmark
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');

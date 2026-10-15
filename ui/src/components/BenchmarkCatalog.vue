@@ -11,16 +11,39 @@ import TabPanel from 'primevue/tabpanel';
 import ProgressSpinner from 'primevue/progressspinner';
 import { siJupyter } from 'simple-icons';
 import { api } from '../lib/api';
-import { resourceLabel } from '../lib/formatters';
-import type { BenchmarkMetadata, Run } from '../lib/models';
+import { repositoryUrl, resourceLabel } from '../lib/formatters';
+import type { Benchmark, BenchmarkMetadata } from '../lib/models';
 import MetadataTable from './MetadataTable.vue';
 
-const props = defineProps<{ runs: Run[]; loading: boolean }>();
-const emit = defineEmits<{ select: [run: Run | null] }>();
-const benchmarks = computed(() => [
-  ...new Map(props.runs.map((run) => [run.benchmark_url || run.benchmark_repo, run])).values(),
-]);
-const selected = ref<Run | null>(null);
+type BenchmarkRow = Benchmark & { benchmark_group_key: string };
+
+const props = defineProps<{ benchmarks: Benchmark[]; loading: boolean }>();
+const emit = defineEmits<{ select: [benchmark: Benchmark | null] }>();
+function benchmarkName(benchmark: Benchmark): string {
+  const title = benchmark.benchmark_title.trim();
+  const versionSuffix = benchmark.version ? ` (version ${benchmark.version})` : '';
+  return (
+    (versionSuffix && title.endsWith(versionSuffix)
+      ? title.slice(0, -versionSuffix.length)
+      : title) || resourceLabel(benchmark.repo)
+  );
+}
+const benchmarks = computed<BenchmarkRow[]>(() =>
+  props.benchmarks.map((benchmark) => ({
+    ...benchmark,
+    benchmark_group_key: benchmarkName(benchmark),
+  })),
+);
+const expandedBenchmarks = ref<string[]>([]);
+const benchmarkGroups = computed(() => {
+  const result = new Map<string, number>();
+  for (const benchmark of benchmarks.value) {
+    const key = benchmark.benchmark_group_key;
+    result.set(key, (result.get(key) || 0) + 1);
+  }
+  return result;
+});
+const selected = ref<Benchmark | null>(null);
 const metadataVisible = ref(false);
 const metadataLoading = ref(false);
 const metadataError = ref('');
@@ -39,19 +62,26 @@ watch(
   },
   { immediate: true },
 );
+watch(
+  benchmarkGroups,
+  (groups) => {
+    expandedBenchmarks.value = [...groups.keys()];
+  },
+  { immediate: true },
+);
 
-function selectRun(run: Run): void {
-  selected.value = run;
-  emit('select', run);
+function selectRun(benchmark: Benchmark): void {
+  selected.value = benchmark;
+  emit('select', benchmark);
 }
 
-async function openMetadata(run: Run): Promise<void> {
+async function openMetadata(run: Benchmark): Promise<void> {
   const currentRequest = ++requestId;
   metadataVisible.value = true;
   metadataLoading.value = true;
   metadataError.value = '';
   metadata.value = null;
-  metadataTitle.value = run.benchmark || resourceLabel(run.benchmark_repo);
+  metadataTitle.value = run.benchmark_title;
   try {
     if (!run.benchmark_url) throw new Error('This benchmark does not have a RoHub URL.');
     const result = await api.benchmarkMetadata(run.benchmark_url);
@@ -85,21 +115,19 @@ function jupyterUrl(repository: string | null): string | null {
     <div class="grid-loading-wrapper benchmark-wrapper" :class="{ 'is-loading': loading }">
       <DataTable
         v-model:selection="selected"
+        v-model:expandedRowGroups="expandedBenchmarks"
         :value="benchmarks"
         data-key="benchmark_url"
         selection-mode="single"
+        row-group-mode="subheader"
+        group-rows-by="benchmark_group_key"
+        expandable-row-groups
         class="benchmark-grid"
+        :pt="{ rowGroupHeaderCell: { colspan: 7 } }"
         @row-select="selectRun($event.data)"
       >
         <Column selection-mode="single" header-style="width: 48px" />
-        <Column header="Benchmark" class="benchmark-name" sortable sort-field="benchmark_repo">
-          <template #body="slot"
-            ><span>{{
-              slot.data.benchmark || resourceLabel(slot.data.benchmark_repo)
-            }}</span></template
-          >
-        </Column>
-        <Column field="version" header="Version" sortable header-style="width: 140px" />
+        <Column field="version" header="Version" header-style="width: 140px" />
         <Column header="Metadata" header-style="width: 110px">
           <template #body="slot">
             <button
@@ -113,12 +141,28 @@ function jupyterUrl(repository: string | null): string | null {
             </button>
           </template>
         </Column>
+        <Column header="Research problem" header-style="width: 150px">
+          <template #body="slot">
+            <a
+              v-if="slot.data.research_problem_uri"
+              class="grid-action research-problem-action"
+              :href="slot.data.research_problem_uri"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Open research problem"
+              aria-label="Open research problem"
+              @click.stop
+            >
+              <i class="fa-regular fa-pencil" aria-hidden="true"></i>
+            </a>
+          </template>
+        </Column>
         <Column header="Source" header-style="width: 95px">
           <template #body="slot">
             <a
-              v-if="slot.data.benchmark_repo"
+              v-if="repositoryUrl(slot.data.repo)"
               class="grid-action source-action"
-              :href="slot.data.benchmark_repo"
+              :href="repositoryUrl(slot.data.repo) || undefined"
               target="_blank"
               rel="noopener noreferrer"
               title="Open GitHub repository"
@@ -147,9 +191,9 @@ function jupyterUrl(repository: string | null): string | null {
         <Column header="Notebook" header-style="width: 100px">
           <template #body="slot">
             <a
-              v-if="jupyterUrl(slot.data.benchmark_repo)"
+              v-if="jupyterUrl(repositoryUrl(slot.data.repo))"
               class="grid-action notebook-action"
-              :href="jupyterUrl(slot.data.benchmark_repo) || undefined"
+              :href="jupyterUrl(repositoryUrl(slot.data.repo)) || undefined"
               target="_blank"
               rel="noopener noreferrer"
               title="Open repository in Jupyter Notebook"
@@ -167,6 +211,17 @@ function jupyterUrl(repository: string | null): string | null {
             </a>
           </template>
         </Column>
+        <template #groupheader="slot">
+          <div class="benchmark-group-content">
+            <span>{{ slot.data.benchmark_group_key }}</span>
+            <span class="benchmark-group-count">
+              {{ benchmarkGroups.get(slot.data.benchmark_group_key) }}
+              {{
+                benchmarkGroups.get(slot.data.benchmark_group_key) === 1 ? 'version' : 'versions'
+              }}
+            </span>
+          </div>
+        </template>
       </DataTable>
       <div v-if="loading" class="grid-loading-overlay">
         <ProgressSpinner aria-label="Loading benchmarks" />

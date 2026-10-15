@@ -1,10 +1,9 @@
 import { api } from './api';
-import type { Run, RunValues, ValueColumn } from './models';
-import { resourceLabel } from './formatters';
+import type { Run, ValueColumn } from './models';
 
 export type AnalysisRow = Record<string, unknown>;
 export interface RunAnalysisData {
-  payload: RunValues;
+  benchmark: string;
   rows: AnalysisRow[];
   columns: ValueColumn[];
   runCount: number;
@@ -18,7 +17,7 @@ export interface RunAnalysisData {
 
 export async function loadAnalysis(runs: Run[]): Promise<RunAnalysisData> {
   const responses = await Promise.all(runs.map((run) => api.runValues(run.run_id)));
-  const benchmarkLabel = runs[0]?.benchmark || resourceLabel(runs[0]?.benchmark_repo);
+  const benchmarkLabel = runs[0]?.benchmark_title || 'Benchmark';
   const columnsByKey = new Map<string, ValueColumn>();
   for (const response of responses) {
     for (const column of response.columns) {
@@ -66,16 +65,10 @@ export async function loadAnalysis(runs: Run[]): Promise<RunAnalysisData> {
     ),
   }));
   return {
+    benchmark: benchmarkLabel,
     columns,
     rows,
     runCount: runs.length,
     runDetails,
-    payload: {
-      benchmark: benchmarkLabel,
-      software_name: runs.length === 1 ? runs[0].software_name : null,
-      run_count: runs.length,
-      columns,
-      rows,
-    },
   };
 }

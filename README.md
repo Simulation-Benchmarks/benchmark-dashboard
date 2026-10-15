@@ -12,12 +12,8 @@ production RoHub knowledge graph. It consists of:
 The API caches the published-runs response for five minutes. Refreshing the
 data from the UI bypasses that cache.
 
-The service checks each run's named-graph URL for nonempty Turtle content.
-Runs with missing, empty, or invalid graphs are hidden from the published-runs
-grid; their benchmarks remain in the catalog. Graph checks share the five-minute
-runs cache and are repeated on Reload. Network or server failures report a load
-error instead of marking graphs invalid. Initial loads and reloads may take longer
-because each distinct graph URL must be fetched.
+The service resolves named graphs through SPARQL for run links and values. It
+does not fetch graph URLs when loading the published-runs grid.
 
 ## Configuration
 

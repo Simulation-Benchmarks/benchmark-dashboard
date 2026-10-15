@@ -6,17 +6,13 @@ import re
 import tempfile
 import time
 from collections import deque
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
 from threading import Lock
 from typing import Any
-from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
 
 from dotenv import load_dotenv
-from rdflib import Graph
 
 # Support a service-local .env file during development. Environment variables
 # supplied by the runtime (for example, Podman's --env-file) take precedence.
@@ -25,6 +21,7 @@ load_dotenv(Path(__file__).resolve().parent / ".env", override=False)
 CACHE_SECONDS = 300
 
 _cache: tuple[float, list[dict[str, Any]]] | None = None
+_benchmarks_cache: tuple[float, list[dict[str, Any]]] | None = None
 _cache_lock = Lock()
 _sparql_log: deque[dict[str, Any]] = deque(maxlen=100)
 _sparql_log_lock = Lock()
@@ -250,7 +247,7 @@ def query_run_values(run_id: str) -> dict[str, Any]:
     return {
         "run_id": run_id,
         "software_name": run.get("software_name"),
-        "benchmark": run.get("benchmark") or run.get("benchmark_repo"),
+        "benchmark": run.get("benchmark") or run.get("benchmark_title"),
         "query": query.strip(),
         "columns": columns,
         "rows": [
@@ -280,46 +277,6 @@ def load_benchmark_metadata(benchmark_url: str) -> dict[str, Any]:
     return _benchmark_metadata(benchmark_url)
 
 
-def _graph_has_content(url: str) -> bool:
-    """Follow the graph URL and require a nonempty Turtle document."""
-    request = Request(url, headers={"Accept": "text/turtle"})
-    try:
-        with urlopen(request, timeout=20) as response:
-            content = response.read()
-            resolved_url = response.geturl()
-    except HTTPError as error:
-        if error.code in (404, 410):
-            return False
-        raise UpstreamError(f"Could not validate named graph: {url}") from error
-    except (URLError, OSError) as error:
-        raise UpstreamError(f"Could not validate named graph: {url}") from error
-
-    if not content.strip():
-        return False
-    try:
-        graph = Graph().parse(data=content, format="turtle", publicID=resolved_url)
-    except Exception:
-        # Includes the upstream literal 'None', HTML, and malformed Turtle.
-        return False
-    return len(graph) > 0
-
-
-def _validated_graphs_by_run(
-    rows: list[dict[str, Any]],
-) -> dict[str, str]:
-    """Validate each distinct URL once and prefer valid graphs for each run."""
-    urls = sorted({row["graph"] for row in rows if row.get("graph")})
-    with ThreadPoolExecutor(max_workers=min(8, len(urls) or 1)) as pool:
-        valid_urls = {
-            url for url, valid in zip(urls, pool.map(_graph_has_content, urls)) if valid
-        }
-    result = {}
-    for row in rows:
-        if row.get("graph") in valid_urls:
-            result.setdefault(row["run_id"], row["graph"])
-    return result
-
-
 def load_runs(*, force: bool = False) -> list[dict[str, Any]]:
     """Load published runs and software metadata from their named graphs."""
     global _cache
@@ -332,10 +289,23 @@ def load_runs(*, force: bool = False) -> list[dict[str, Any]]:
             build_run_named_graphs_query,
         )
 
-        rows = _sparql(build_published_runs_query())
+        query_rows = _sparql(build_published_runs_query())
+        # A benchmark RO can have multiple research-problem annotations. Keep
+        # one record per run and benchmark, independent of those annotations.
+        rows_by_run = {}
+        for row in query_rows:
+            key = (row.get("run_id"), row.get("benchmark_url"))
+            if key not in rows_by_run or (row.get("research_problem_uri") or "") < (
+                rows_by_run[key].get("research_problem_uri") or ""
+            ):
+                rows_by_run[key] = row
+        rows = list(rows_by_run.values())
         run_ids = [row["run_id"] for row in rows if row.get("run_id")]
         graphs = _sparql(build_run_named_graphs_query(run_ids)) if run_ids else []
-        graph_by_run = _validated_graphs_by_run(graphs)
+        graph_by_run: dict[str, str] = {}
+        for graph_row in graphs:
+            if graph_row.get("run_id") and graph_row.get("graph"):
+                graph_by_run.setdefault(graph_row["run_id"], graph_row["graph"])
         metadata_by_run = {
             row["run_id"]: row
             for row in graphs
@@ -347,10 +317,10 @@ def load_runs(*, force: bool = False) -> list[dict[str, Any]]:
                 "run_id": row.get("run_id"),
                 "title": _json_value(row.get("title")),
                 "benchmark_url": row.get("benchmark_url"),
-                "benchmark_repo": row.get("benchmark_repo"),
+                "benchmark_title": _json_value(row.get("benchmark_title")),
+                "research_problem_uri": row.get("research_problem_uri"),
                 "branch_url": row.get("branch_url"),
                 "graph": graph_by_run.get(row.get("run_id")),
-                "graph_valid": row.get("run_id") in graph_by_run,
                 "software_name": _json_value(
                     metadata_by_run.get(row.get("run_id"), {}).get("software_name")
                 ),
@@ -369,7 +339,44 @@ def load_runs(*, force: bool = False) -> list[dict[str, Any]]:
             for row in rows
         ]
         result.sort(
-            key=lambda row: (row["benchmark_repo"] or "", row["software_name"] or "")
+            key=lambda row: (row["branch_url"] or "", row["software_name"] or "")
         )
         _cache = (time.monotonic(), result)
+        return result
+
+
+def load_benchmarks(*, force: bool = False) -> list[dict[str, Any]]:
+    """Load benchmark objects independently of their published runs."""
+    global _benchmarks_cache
+    with _cache_lock:
+        if (
+            not force
+            and _benchmarks_cache
+            and time.monotonic() - _benchmarks_cache[0] < CACHE_SECONDS
+        ):
+            return _benchmarks_cache[1]
+
+        from semantic_benchmark.rohub import build_benchmarks_query
+
+        rows = _sparql(build_benchmarks_query())
+        by_url: dict[str, dict[str, Any]] = {}
+        for row in rows:
+            url = row.get("benchmark_url")
+            if url and (
+                url not in by_url
+                or (row.get("research_problem_uri") or "")
+                < (by_url[url].get("research_problem_uri") or "")
+            ):
+                by_url[url] = {
+                    "benchmark_url": url,
+                    "benchmark_title": _json_value(row.get("benchmark_title")),
+                    "research_problem_uri": row.get("research_problem_uri"),
+                    "version": _json_value(row.get("version")),
+                    "repo": row.get("repo"),
+                }
+        result = sorted(
+            by_url.values(),
+            key=lambda row: (row["benchmark_title"] or "", row["version"] or ""),
+        )
+        _benchmarks_cache = (time.monotonic(), result)
         return result

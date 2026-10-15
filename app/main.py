@@ -4,6 +4,7 @@ from .services import (
     RunNotFoundError,
     UpstreamError,
     load_benchmark_metadata,
+    load_benchmarks,
     clear_sparql_log,
     load_run_metadata,
     load_runs,
@@ -23,6 +24,15 @@ def health() -> dict[str, str]:
 def runs(refresh: bool = Query(False, description="Bypass the five-minute cache")):
     try:
         items = load_runs(force=refresh)
+    except UpstreamError as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
+    return {"items": items, "count": len(items)}
+
+
+@app.get("/api/benchmarks")
+def benchmarks(refresh: bool = Query(False, description="Bypass the five-minute cache")):
+    try:
+        items = load_benchmarks(force=refresh)
     except UpstreamError as error:
         raise HTTPException(status_code=502, detail=str(error)) from error
     return {"items": items, "count": len(items)}

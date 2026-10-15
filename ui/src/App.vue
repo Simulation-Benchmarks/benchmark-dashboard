@@ -8,8 +8,9 @@ import DashboardHelp from './components/DashboardHelp.vue';
 import SparqlLog from './components/SparqlLog.vue';
 import { api } from './lib/api';
 import { dark, setDark } from './lib/theme';
-import type { Run } from './lib/models';
+import type { Benchmark, Run } from './lib/models';
 
+const benchmarks = ref<Benchmark[]>([]);
 const runs = ref<Run[]>([]);
 const selectedBenchmarkUrl = ref('');
 const publishedRuns = computed(() =>
@@ -24,7 +25,12 @@ async function load(refresh = false): Promise<void> {
   loading.value = true;
   error.value = '';
   try {
-    runs.value = (await api.runs(refresh)).items;
+    const [benchmarkResponse, runResponse] = await Promise.all([
+      api.benchmarks(refresh),
+      api.runs(refresh),
+    ]);
+    benchmarks.value = benchmarkResponse.items;
+    runs.value = runResponse.items;
     updated.value = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : 'The runs could not be loaded.';
@@ -58,7 +64,7 @@ onMounted(() => void load());
     <div v-if="error" class="state error">{{ error }}</div>
     <template v-else>
       <BenchmarkCatalog
-        :runs="runs"
+        :benchmarks="benchmarks"
         :loading="loading"
         @select="selectedBenchmarkUrl = $event?.benchmark_url || ''"
       />

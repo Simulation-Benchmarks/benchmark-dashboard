@@ -2,8 +2,8 @@
 import { computed, ref, watch } from 'vue';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
+import ToggleSwitch from 'primevue/toggleswitch';
 import DataTable from 'primevue/datatable';
-import type { DataTableSortEvent } from 'primevue/datatable';
 import Column from 'primevue/column';
 import ProgressSpinner from 'primevue/progressspinner';
 import type { Run } from '../lib/models';
@@ -22,57 +22,34 @@ const mainBranchOnly = ref(true);
 const search = ref('');
 const selectedRuns = ref<RunRow[]>([]);
 const expandedGroups = ref<string[]>([]);
-const tableContainer = ref<HTMLElement | null>(null);
-const sortField = ref<'software_version' | 'datePublished'>('datePublished');
-const sortOrder = ref<1 | -1>(-1);
 const visibleRuns = computed(() =>
-  props.runs.filter(
-    (run) => run.graph_valid && (!mainBranchOnly.value || run.branch_url?.endsWith('/tree/main')),
-  ),
+  props.runs.filter((run) => !mainBranchOnly.value || run.branch_url?.endsWith('/tree/main')),
 );
 const groupedRuns = computed<RunRow[]>(() => {
   const term = search.value.trim().toLocaleLowerCase();
-  return visibleRuns.value
-    .filter(
-      (run) =>
-        !term ||
-        [
-          run.software_name,
-          run.title,
-          run.software_url,
-          run.software_version,
-          run.benchmark_repo,
-          run.branch_url,
-          run.datePublished,
-        ].some((value) => value?.toLocaleLowerCase().includes(term)),
+  const bySoftware = new Map<string, RunRow[]>();
+  for (const run of visibleRuns.value) {
+    if (
+      term &&
+      ![
+        run.software_name,
+        run.title,
+        run.software_url,
+        run.software_version,
+        run.branch_url,
+        run.datePublished,
+      ].some((value) => value?.toLocaleLowerCase().includes(term))
     )
-    .map((run) => ({
-      ...run,
-      software_group_key: (run.software_name?.trim() || 'Unknown software').toLocaleLowerCase(),
-    }))
-    .sort((a, b) => {
-      const groupOrder = a.software_group_key.localeCompare(b.software_group_key);
-      if (groupOrder) return groupOrder;
-      if (sortField.value === 'software_version') {
-        return (
-          sortOrder.value *
-          (a.software_version || '').localeCompare(b.software_version || '', undefined, {
-            numeric: true,
-          })
-        );
-      }
-      return (
-        sortOrder.value *
-        ((Date.parse(a.datePublished || '') || 0) - (Date.parse(b.datePublished || '') || 0))
-      );
-    });
-});
-function sortRuns(event: DataTableSortEvent): void {
-  if (event.sortField === 'software_version' || event.sortField === 'datePublished') {
-    sortField.value = event.sortField;
-    sortOrder.value = event.sortOrder === -1 ? -1 : 1;
+      continue;
+    const software_group_key = (
+      run.software_name?.trim() || 'Unknown software'
+    ).toLocaleLowerCase();
+    const group = bySoftware.get(software_group_key) || [];
+    group.push({ ...run, software_group_key });
+    bySoftware.set(software_group_key, group);
   }
-}
+  return [...bySoftware.values()].flat();
+});
 const groups = computed(() => {
   const result = new Map<string, Group>();
   for (const run of groupedRuns.value) {
@@ -100,7 +77,7 @@ const compareHint = computed(() =>
       : 'Select runs from the same benchmark',
 );
 
-watch(visibleRuns, () => {
+watch([visibleRuns, search], () => {
   selectedRuns.value = [];
 });
 watch(
@@ -116,46 +93,6 @@ function openRun(event: { data: RunRow; originalEvent: Event }): void {
   if (target?.closest('a, button, input, .p-checkbox')) return;
   emit('analyze', [event.data]);
 }
-
-function animateGroupToggle(event: MouseEvent): void {
-  if (
-    !(event.target as HTMLElement).closest('.p-datatable-row-toggle-button') ||
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  )
-    return;
-
-  const body = tableContainer.value?.querySelector('.p-datatable-tbody');
-  if (!body) return;
-  const before = new Map(
-    Array.from(body.children, (row) => [row, row.getBoundingClientRect().top]),
-  );
-
-  // PrimeVue updates the rows after its click handler; animate their new positions on the next frame.
-  requestAnimationFrame(() => {
-    if (!body.isConnected) return;
-    for (const row of Array.from(body.children)) {
-      if (!(row instanceof HTMLElement)) continue;
-      const previousTop = before.get(row);
-      if (previousTop === undefined) {
-        row.animate(
-          [
-            { opacity: 0, transform: 'translateY(-8px)' },
-            { opacity: 1, transform: 'translateY(0)' },
-          ],
-          { duration: 220, easing: 'ease-out' },
-        );
-      } else {
-        const shift = previousTop - row.getBoundingClientRect().top;
-        if (Math.abs(shift) > 1) {
-          row.animate([{ transform: `translateY(${shift}px)` }, { transform: 'translateY(0)' }], {
-            duration: 240,
-            easing: 'ease-in-out',
-          });
-        }
-      }
-    }
-  });
-}
 </script>
 
 <template>
@@ -166,10 +103,10 @@ function animateGroupToggle(event: MouseEvent): void {
         ><i class="pi pi-search"></i
         ><InputText v-model="search" type="search" placeholder="Search ..." aria-label="Search ..."
       /></span>
-      <select v-model="mainBranchOnly" class="branch-filter" aria-label="Filter runs by branch">
-        <option :value="false">All runs</option>
-        <option :value="true">Main branch</option>
-      </select>
+      <label class="release-filter">
+        <ToggleSwitch v-model="mainBranchOnly" aria-label="Latest Release" />
+        <span>Latest Release</span>
+      </label>
       <span class="compare-trigger"
         ><Button
           label="Compare"
@@ -190,14 +127,11 @@ function animateGroupToggle(event: MouseEvent): void {
     <div class="summary">
       <span>Updated {{ updated }}</span>
     </div>
-    <div ref="tableContainer" class="grid-loading-wrapper" @click.capture="animateGroupToggle">
+    <div class="grid-loading-wrapper runs-wrapper">
       <DataTable
         v-model:selection="selectedRuns"
         v-model:expandedRowGroups="expandedGroups"
         :value="groupedRuns"
-        lazy
-        :sort-field="sortField"
-        :sort-order="sortOrder"
         data-key="run_id"
         row-group-mode="subheader"
         group-rows-by="software_group_key"
@@ -208,16 +142,12 @@ function animateGroupToggle(event: MouseEvent): void {
         :pt="{ rowGroupHeaderCell: { colspan: 7 } }"
         table-style="min-width: 640px"
         @row-click="openRun"
-        @sort="sortRuns"
       >
         <Column selection-mode="multiple" header-style="width: 48px" />
-        <!-- <Column field="title" header="Run Title">
-          <template #body="slot">{{ slot.data.title || '—' }}</template>
-        </Column> -->
-        <Column field="software_version" header="Software Version" sortable>
+        <Column field="software_version" header="Software Version">
           <template #body="slot">{{ slot.data.software_version || '—' }}</template>
         </Column>
-        <Column field="datePublished" header="Publish Date" sortable>
+        <Column field="datePublished" header="Publish Date">
           <template #body="slot">
             <span
               class="published-date"
