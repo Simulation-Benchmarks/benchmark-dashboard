@@ -2,5 +2,5 @@ fastapi
 pandas
 python-dotenv
 rohub
-semantic-benchmark<=0.4.2
+semantic-benchmark~=0.4.2
 uvicorn[standard]
