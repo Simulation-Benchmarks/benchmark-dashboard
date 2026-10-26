@@ -13,7 +13,7 @@ const steps: TourStep[] = [
   {
     selector: '.benchmark-grid',
     title: 'Choose a benchmark',
-    description: 'Select a row in the benchmark table to filter the published runs below.',
+    description: 'Select a version in a benchmark table to filter the published runs below.',
   },
   {
     selector: '.metadata-button',

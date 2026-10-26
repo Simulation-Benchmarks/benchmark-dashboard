@@ -1,3 +1,10 @@
+.benchmark-list {
+  display: grid;
+  gap: 20px;
+}
+.benchmark-card {
+  min-width: 0;
+}
 .benchmark-grid {
   width: 100%;
   border: 1px solid var(--text);
@@ -8,38 +15,46 @@
   background: color-mix(in srgb, var(--soft) 82%, var(--parameter-soft));
   color: var(--text);
 }
-.benchmark-grid .p-datatable-row-group-header > td {
-  position: relative;
-  background: var(--soft);
-  border-top: 1px solid var(--text);
-}
-.benchmark-grid .p-datatable-row-toggle-button {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-}
 .benchmark-group-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 34px;
-  padding-left: 42px;
+  min-height: 48px;
+  gap: 16px;
+  padding: 8px 14px;
+  background: var(--soft);
+  border: 1px solid var(--text);
+  border-bottom: 0;
 }
 .benchmark-group-title {
+  margin: 0;
   font-size: 15px;
   font-weight: 700;
 }
-.benchmark-group-count {
-  color: var(--muted);
+.benchmark-versions-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
   font-size: 13px;
-  font-weight: 400;
+  white-space: nowrap;
+}
+.benchmark-versions-footer {
+  display: flex;
+  justify-content: flex-start;
+  padding: 8px 14px;
+  background: var(--soft);
+  border: 1px solid var(--text);
+  border-top: 0;
+}
+.benchmark-card:has(.benchmark-versions-footer) .benchmark-grid {
+  border-bottom: 0;
+}
+.benchmark-empty {
+  padding: 1rem;
 }
 .benchmark-grid .p-datatable-thead > tr > th:not(:nth-child(2)),
 .benchmark-grid .p-datatable-tbody > tr:not(.p-datatable-row-group-header) > td:not(:nth-child(2)),
