@@ -1,4 +1,4 @@
-import type { Benchmark, BenchmarkMetadata, Run, RunValues, SparqlEntry } from './models';
+import type { Benchmark, BenchmarkMetadata, Run, RunValues, SparqlEntry, ToolParameter } from './models';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(path, options);
@@ -35,6 +35,8 @@ export const api = {
     request<RunValues>(`/api/run-values?run_id=${encodeURIComponent(runId)}`),
   benchmarkMetadata: (url: string) =>
     cachedMetadata(url, `/api/benchmark-metadata?benchmark_url=${encodeURIComponent(url)}`),
+  toolParameters: (runId: string) =>
+    request<{ items: ToolParameter[] }>(`/api/tool-parameters?run_id=${encodeURIComponent(runId)}`),
   sparqlLog: () => request<{ items: SparqlEntry[]; count: number }>('/api/sparql-log'),
   clearSparqlLog: () => request<void>('/api/sparql-log', { method: 'DELETE' }),
 };

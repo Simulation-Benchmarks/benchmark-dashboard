@@ -19,7 +19,7 @@ const steps: TourStep[] = [
     selector: '.metadata-button',
     fallback: '.benchmark-grid',
     title: 'Inspect benchmark metadata',
-    description: 'Open the metadata dialog to browse the benchmark parameters and metrics.',
+    description: 'Open benchmark metadata to browse parameters and metrics. Published runs also show software parameters.',
   },
   {
     selector: '.notebook-action',

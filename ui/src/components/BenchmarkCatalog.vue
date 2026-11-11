@@ -238,7 +238,7 @@ function jupyterUrl(repository: string | null): string | null {
     v-model:visible="metadataVisible"
     modal
     :style="{ width: 'min(760px, 94vw)' }"
-    :content-style="{ height: 'min(520px, 70vh)', overflow: 'auto' }"
+    :content-style="{ height: 'min(520px, 70vh)', overflow: 'hidden' }"
   >
     <template #header
       ><div>

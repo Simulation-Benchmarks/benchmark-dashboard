@@ -17,7 +17,15 @@ export interface Run {
   software_name: string | null;
   software_url: string | null;
   software_version: string | null;
+  has_tool_parameters: boolean;
   datePublished: string | null;
+}
+
+export interface ToolParameter {
+  name: string;
+  additional_type: string;
+  default_value: string;
+  description: string | null;
 }
 
 export interface BenchmarkMetadata {

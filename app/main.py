@@ -7,6 +7,7 @@ from .services import (
     load_benchmarks,
     clear_sparql_log,
     load_run_metadata,
+    load_tool_parameters,
     load_runs,
     query_run_values,
     sparql_log,
@@ -52,6 +53,16 @@ def run_values(run_id: str = Query(..., description="Published run IRI")):
 def run_metadata(run_id: str = Query(..., description="Published run IRI")):
     try:
         return load_run_metadata(run_id)
+    except RunNotFoundError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except UpstreamError as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
+
+
+@app.get("/api/tool-parameters")
+def tool_parameters(run_id: str = Query(..., description="Published run IRI")):
+    try:
+        return {"items": load_tool_parameters(run_id)}
     except RunNotFoundError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     except UpstreamError as error:

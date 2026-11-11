@@ -6,7 +6,9 @@ import ToggleSwitch from 'primevue/toggleswitch';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import ProgressSpinner from 'primevue/progressspinner';
-import type { Run } from '../lib/models';
+import Dialog from 'primevue/dialog';
+import { api } from '../lib/api';
+import type { Run, ToolParameter } from '../lib/models';
 import { formatPublishedDate, formatPublishedDateTooltip } from '../lib/formatters';
 
 type RunRow = Run & { software_group_key: string };
@@ -28,6 +30,31 @@ const mainBranchOnly = ref(true);
 const search = ref('');
 const selectedRuns = ref<RunRow[]>([]);
 const expandedGroups = ref<string[]>([]);
+const toolParametersVisible = ref(false);
+const toolParametersLoading = ref(false);
+const toolParametersError = ref('');
+const toolParameters = ref<ToolParameter[]>([]);
+const toolParametersTitle = ref('Software parameters');
+let toolParametersRequestId = 0;
+
+async function openToolParameters(run: Run): Promise<void> {
+  const requestId = ++toolParametersRequestId;
+  toolParametersVisible.value = true;
+  toolParametersLoading.value = true;
+  toolParametersError.value = '';
+  toolParameters.value = [];
+  toolParametersTitle.value = `${run.software_name || 'Tool'} ${run.software_version || ''}`.trim();
+  try {
+    const result = await api.toolParameters(run.run_id);
+    if (requestId === toolParametersRequestId) toolParameters.value = result.items;
+  } catch (cause) {
+    if (requestId === toolParametersRequestId)
+      toolParametersError.value =
+        cause instanceof Error ? cause.message : 'Software parameters could not be loaded.';
+  } finally {
+    if (requestId === toolParametersRequestId) toolParametersLoading.value = false;
+  }
+}
 const visibleRuns = computed(() =>
   props.runs.filter((run) => !mainBranchOnly.value || run.branch_url?.endsWith('/tree/main')),
 );
@@ -153,13 +180,32 @@ function openRun(event: { data: RunRow; originalEvent: Event }): void {
         resizable-columns
         column-resize-mode="fit"
         class="runs-grid"
-        :pt="{ rowGroupHeaderCell: { colspan: 7 } }"
+        :pt="{ rowGroupHeaderCell: { colspan: 8 } }"
         table-style="min-width: 640px"
         @row-click="openRun"
       >
         <Column selection-mode="multiple" header-style="width: 48px" />
         <Column field="software_version" header="Software Version">
           <template #body="slot">{{ slot.data.software_version || '—' }}</template>
+        </Column>
+        <Column
+          header="Software Parameters"
+          header-style="width: 145px"
+          header-class="centered-run-column"
+          body-class="centered-run-column"
+        >
+          <template #body="slot">
+            <button
+              v-if="slot.data.has_tool_parameters"
+              class="metadata-button"
+              type="button"
+              title="View software parameters"
+              aria-label="View software parameters"
+              @click.stop="openToolParameters(slot.data)"
+            >
+              <i class="pi pi-info-circle" aria-hidden="true"></i>
+            </button>
+          </template>
         </Column>
         <Column field="datePublished" header="Publish Date">
           <template #body="slot">
@@ -201,7 +247,12 @@ function openRun(event: { data: RunRow; originalEvent: Event }): void {
             </a>
           </template>
         </Column>
-        <Column header="Graph" header-style="width: 95px">
+        <Column
+          header="Graph"
+          header-style="width: 95px"
+          header-class="centered-run-column"
+          body-class="centered-run-column"
+        >
           <template #body="slot">
             <a
               v-if="slot.data.graph"
@@ -244,4 +295,33 @@ function openRun(event: { data: RunRow; originalEvent: Event }): void {
       </div>
     </div>
   </section>
+  <Dialog
+    v-model:visible="toolParametersVisible"
+    modal
+    :style="{ width: 'min(900px, 94vw)' }"
+    :content-style="{ height: 'min(520px, 70vh)', overflow: 'hidden' }"
+  >
+    <template #header><h2>{{ toolParametersTitle }} parameters</h2></template>
+    <div v-if="toolParametersLoading" class="metadata-state">
+      <ProgressSpinner aria-label="Loading software parameters" />
+    </div>
+    <div v-else-if="toolParametersError" class="metadata-state metadata-error" role="alert">
+      {{ toolParametersError }}
+    </div>
+    <DataTable
+      v-else
+      :value="toolParameters"
+      scrollable
+      scroll-height="min(460px, calc(70vh - 3rem))"
+      class="metadata-grid parameter-grid"
+    >
+      <Column field="name" header="Name" />
+      <Column field="additional_type" header="Type" />
+      <Column field="default_value" header="Default Value" />
+      <Column header="Description">
+        <template #body="slot">{{ slot.data.description || '—' }}</template>
+      </Column>
+      <template #empty>No software parameters are available for this run.</template>
+    </DataTable>
+  </Dialog>
 </template>

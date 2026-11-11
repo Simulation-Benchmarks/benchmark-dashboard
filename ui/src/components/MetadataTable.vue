@@ -11,7 +11,12 @@ defineProps<{
 </script>
 
 <template>
-  <DataTable :value="items" :class="['metadata-grid', `${kind}-grid`]">
+  <DataTable
+    :value="items"
+    scrollable
+    scroll-height="min(380px, calc(70vh - 9rem))"
+    :class="['metadata-grid', `${kind}-grid`]"
+  >
     <Column field="name" header="Name" />
     <Column header="Unit">
       <template #body="slot">
