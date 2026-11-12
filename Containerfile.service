@@ -1,5 +1,5 @@
 
-FROM python:3.12.15-alpine3.24
+FROM python:3.12.16-alpine3.24
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -19,7 +19,7 @@ RUN apk add --no-cache --virtual .build-deps \
         musl-dev \
         libffi-dev \
         git \
-    && python -m pip install --no-cache-dir --upgrade pip==26.2.2 \
+    && python -m pip install --no-cache-dir --upgrade pip==26.3 \
     && python -m pip install --no-cache-dir -r requirements.txt \
     && python -m pip uninstall -y pip \
     && apk del .build-deps
