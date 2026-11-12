@@ -72,6 +72,13 @@ small {
   cursor: wait;
 }
 
+.grid-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  white-space: nowrap;
+}
 .grid-action {
   display: inline-flex;
   align-items: center;
@@ -87,6 +94,13 @@ small {
   background: var(--soft);
 }
 
+.grid-action-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
 .grid-action:is(
     .source-action,
     .rohub-action,
@@ -95,13 +109,6 @@ small {
     .research-problem-action
   ):hover {
   background: transparent;
-}
-
-.grid-action-icon {
-  display: block;
-  width: 24px;
-  height: 28px;
-  object-fit: contain;
 }
 
 .github-icon {
@@ -114,15 +121,6 @@ small {
 
 .graph-action .pi {
   font-size: 20px;
-}
-
-.rohub-action {
-  width: 70px;
-}
-
-.rohub-action .grid-action-icon {
-  width: 64px;
-  height: 24px;
 }
 
 .centered-column {

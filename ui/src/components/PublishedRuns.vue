@@ -180,32 +180,13 @@ function openRun(event: { data: RunRow; originalEvent: Event }): void {
         resizable-columns
         column-resize-mode="fit"
         class="runs-grid"
-        :pt="{ rowGroupHeaderCell: { colspan: 8 } }"
+        :pt="{ rowGroupHeaderCell: { colspan: 4 } }"
         table-style="min-width: 640px"
         @row-click="openRun"
       >
         <Column selection-mode="multiple" header-style="width: 48px" />
         <Column field="software_version" header="Software Version">
           <template #body="slot">{{ slot.data.software_version || '—' }}</template>
-        </Column>
-        <Column
-          header="Software Parameters"
-          header-style="width: 145px"
-          header-class="centered-run-column"
-          body-class="centered-run-column"
-        >
-          <template #body="slot">
-            <button
-              v-if="slot.data.has_tool_parameters"
-              class="metadata-button"
-              type="button"
-              title="View software parameters"
-              aria-label="View software parameters"
-              @click.stop="openToolParameters(slot.data)"
-            >
-              <i class="pi pi-info-circle" aria-hidden="true"></i>
-            </button>
-          </template>
         </Column>
         <Column field="datePublished" header="Publish Date">
           <template #body="slot">
@@ -217,56 +198,55 @@ function openRun(event: { data: RunRow; originalEvent: Event }): void {
             </span>
           </template>
         </Column>
-        <Column header="Source" header-style="width: 95px">
+        <Column header-style="width: 180px">
           <template #body="slot">
-            <a
-              v-if="slot.data.branch_url"
-              class="grid-action source-action"
-              :href="slot.data.branch_url"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Open run GitHub repository"
-              aria-label="Open run GitHub repository"
-              @click.stop
-            >
-              <i class="fa-brands fa-github github-icon" aria-hidden="true"></i>
-            </a>
-          </template>
-        </Column>
-        <Column header="RoHub" header-style="width: 95px">
-          <template #body="slot">
-            <a
-              class="grid-action rohub-action"
-              :href="slot.data.run_id"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Open run in RoHub"
-              @click.stop
-            >
-              <img class="grid-action-icon" src="/assets/rohub.svg" alt="RoHub" />
-            </a>
-          </template>
-        </Column>
-        <Column
-          header="Graph"
-          header-style="width: 95px"
-          header-class="centered-run-column"
-          body-class="centered-run-column"
-        >
-          <template #body="slot">
-            <a
-              v-if="slot.data.graph"
-              class="grid-action graph-action"
-              :href="slot.data.graph"
-              target="_blank"
-              rel="noopener noreferrer"
-              :title="slot.data.graph"
-              aria-label="Open named graph"
-              @click.stop
-            >
-              <i class="pi pi-share-alt" aria-hidden="true"></i>
-            </a>
-            <span v-else>—</span>
+            <div class="grid-actions">
+              <a
+                v-if="slot.data.branch_url"
+                class="grid-action source-action"
+                :href="slot.data.branch_url"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Open run GitHub repository"
+                aria-label="Open run GitHub repository"
+                @click.stop
+              >
+                <i class="fa-brands fa-github github-icon" aria-hidden="true"></i>
+              </a>
+              <a
+                class="grid-action rohub-action"
+                :href="slot.data.run_id"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Open run in RoHub"
+                aria-label="Open run in RoHub"
+                @click.stop
+              >
+                <img class="grid-action-icon" src="/assets/rohub.svg" alt="" />
+              </a>
+              <a
+                v-if="slot.data.graph"
+                class="grid-action graph-action"
+                :href="slot.data.graph"
+                target="_blank"
+                rel="noopener noreferrer"
+                :title="`Open named graph: ${slot.data.graph}`"
+                aria-label="Open named graph"
+                @click.stop
+              >
+                <i class="pi pi-share-alt" aria-hidden="true"></i>
+              </a>
+              <button
+                v-if="slot.data.has_tool_parameters"
+                class="metadata-button"
+                type="button"
+                title="View software parameters"
+                aria-label="View software parameters"
+                @click.stop="openToolParameters(slot.data)"
+              >
+                <i class="pi pi-cog" aria-hidden="true"></i>
+              </button>
+            </div>
           </template>
         </Column>
         <template #groupheader="slot">
@@ -301,7 +281,9 @@ function openRun(event: { data: RunRow; originalEvent: Event }): void {
     :style="{ width: 'min(900px, 94vw)' }"
     :content-style="{ height: 'min(520px, 70vh)', overflow: 'hidden' }"
   >
-    <template #header><h2>{{ toolParametersTitle }} parameters</h2></template>
+    <template #header
+      ><h2>{{ toolParametersTitle }} parameters</h2></template
+    >
     <div v-if="toolParametersLoading" class="metadata-state">
       <ProgressSpinner aria-label="Loading software parameters" />
     </div>

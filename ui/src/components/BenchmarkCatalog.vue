@@ -135,71 +135,62 @@ function jupyterUrl(repository: string | null): string | null {
           >
             <Column selection-mode="single" header-style="width: 48px" />
             <Column field="version" header="Benchmark Version" header-style="width: 200px" />
-            <Column header="Metadata" header-style="width: 110px">
+            <Column header-style="width: 180px">
               <template #body="slot">
-                <button
-                  class="metadata-button"
-                  type="button"
-                  title="View parameters and metrics"
-                  aria-label="View parameters and metrics"
-                  @click.stop="openMetadata(slot.data)"
-                >
-                  <i class="pi pi-info-circle" aria-hidden="true"></i>
-                </button>
-              </template>
-            </Column>
-            <Column header="Source" header-style="width: 95px">
-              <template #body="slot">
-                <a
-                  v-if="repositoryUrl(slot.data.repo)"
-                  class="grid-action source-action"
-                  :href="repositoryUrl(slot.data.repo) || undefined"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="Open GitHub repository"
-                  aria-label="Open GitHub repository"
-                  @click.stop
-                >
-                  <i class="fa-brands fa-github github-icon" aria-hidden="true"></i>
-                </a>
-              </template>
-            </Column>
-            <Column header="RoHub" header-style="width: 95px">
-              <template #body="slot">
-                <a
-                  v-if="slot.data.benchmark_url"
-                  class="grid-action rohub-action"
-                  :href="slot.data.benchmark_url"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="Open benchmark in RoHub"
-                  @click.stop
-                >
-                  <img class="grid-action-icon" src="/assets/rohub.svg" alt="RoHub" />
-                </a>
-              </template>
-            </Column>
-            <Column header="Notebook" header-style="width: 100px">
-              <template #body="slot">
-                <a
-                  v-if="jupyterUrl(repositoryUrl(slot.data.repo))"
-                  class="grid-action notebook-action"
-                  :href="jupyterUrl(repositoryUrl(slot.data.repo)) || undefined"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="Open repository in Jupyter Notebook"
-                  aria-label="Open repository in Jupyter Notebook"
-                  @click.stop
-                >
-                  <svg
-                    class="grid-action-icon"
-                    viewBox="0 0 24 24"
-                    :fill="`#${siJupyter.hex}`"
-                    aria-hidden="true"
+                <div class="grid-actions">
+                  <a
+                    v-if="repositoryUrl(slot.data.repo)"
+                    class="grid-action source-action"
+                    :href="repositoryUrl(slot.data.repo) || undefined"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Open GitHub repository"
+                    aria-label="Open GitHub repository"
+                    @click.stop
                   >
-                    <path :d="siJupyter.path" />
-                  </svg>
-                </a>
+                    <i class="fa-brands fa-github github-icon" aria-hidden="true"></i>
+                  </a>
+                  <a
+                    v-if="slot.data.benchmark_url"
+                    class="grid-action rohub-action"
+                    :href="slot.data.benchmark_url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Open benchmark in RoHub"
+                    aria-label="Open benchmark in RoHub"
+                    @click.stop
+                  >
+                    <img class="grid-action-icon" src="/assets/rohub.svg" alt="" />
+                  </a>
+                  <a
+                    v-if="jupyterUrl(repositoryUrl(slot.data.repo))"
+                    class="grid-action notebook-action"
+                    :href="jupyterUrl(repositoryUrl(slot.data.repo)) || undefined"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Open repository in Jupyter Notebook"
+                    aria-label="Open repository in Jupyter Notebook"
+                    @click.stop
+                  >
+                    <svg
+                      class="grid-action-icon"
+                      viewBox="0 0 24 24"
+                      :fill="`#${siJupyter.hex}`"
+                      aria-hidden="true"
+                    >
+                      <path :d="siJupyter.path" />
+                    </svg>
+                  </a>
+                  <button
+                    class="metadata-button"
+                    type="button"
+                    title="View parameters and metrics"
+                    aria-label="View parameters and metrics"
+                    @click.stop="openMetadata(slot.data)"
+                  >
+                    <i class="pi pi-info-circle" aria-hidden="true"></i>
+                  </button>
+                </div>
               </template>
             </Column>
           </DataTable>

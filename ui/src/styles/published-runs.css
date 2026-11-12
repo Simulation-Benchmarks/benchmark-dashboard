@@ -66,12 +66,6 @@
 .runs-grid td {
   color: var(--text);
 }
-.runs-grid .centered-run-column {
-  text-align: center;
-}
-.runs-grid .centered-run-column .p-datatable-column-header-content {
-  justify-content: center;
-}
 .runs-grid .p-datatable-row-group-header > td {
   position: relative;
   background: var(--soft);
