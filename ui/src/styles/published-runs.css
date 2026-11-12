@@ -59,6 +59,9 @@
   width: 100%;
   table-layout: fixed;
 }
+.runs-grid .action-column {
+  width: 212px;
+}
 .runs-grid .p-datatable-thead > tr > th {
   background: var(--soft);
   color: var(--text);

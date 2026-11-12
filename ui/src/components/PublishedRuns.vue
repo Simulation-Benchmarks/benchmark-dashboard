@@ -253,6 +253,16 @@ function openRun(event: { data: RunRow; originalEvent: Event }): void {
               >
                 <i class="pi pi-share-alt" aria-hidden="true"></i>
               </a>
+
+              <button
+                class="metadata-button"
+                type="button"
+                title="Open run dialog"
+                aria-label="Open run dialog"
+                @click.stop="emit('analyze', [slot.data])"
+              >
+                <i class="pi pi-chart-line" aria-hidden="true"></i>
+              </button>
               <button
                 v-if="slot.data.has_tool_parameters"
                 class="metadata-button"
