@@ -1,4 +1,11 @@
-import type { Benchmark, BenchmarkMetadata, Run, RunValues, SparqlEntry, ToolParameter } from './models';
+import type {
+  Benchmark,
+  BenchmarkMetadata,
+  Run,
+  RunValues,
+  SparqlEntry,
+  ToolParameter,
+} from './models';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(path, options);

@@ -1,68 +1,25 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import ToggleSwitch from 'primevue/toggleswitch';
 import BenchmarkCatalog from './components/BenchmarkCatalog.vue';
 import PublishedRuns from './components/PublishedRuns.vue';
 import RunAnalysis from './components/RunAnalysis.vue';
 import DashboardHelp from './components/DashboardHelp.vue';
 import SparqlLog from './components/SparqlLog.vue';
-import { api } from './lib/api';
+import { useDashboardData } from './composables/useDashboardData';
 import { dark, setDark } from './lib/theme';
-import type { Benchmark, Run } from './lib/models';
-
-const benchmarks = ref<Benchmark[]>([]);
-const runs = ref<Run[]>([]);
-const selectedBenchmarkUrl = ref('');
-const publishedRuns = computed(() =>
-  selectedBenchmarkUrl.value
-    ? runs.value.filter((run) => run.benchmark_url === selectedBenchmarkUrl.value)
-    : runs.value,
-);
-const benchmarkLoading = ref(true);
-const runsLoading = ref(true);
-const benchmarkError = ref('');
-const runsError = ref('');
-const updated = ref('');
+const {
+  benchmarks,
+  publishedRuns,
+  selectedBenchmarkUrl,
+  benchmarkLoading,
+  runsLoading,
+  benchmarkError,
+  runsError,
+  updated,
+  load,
+} = useDashboardData();
 const analysis = ref<InstanceType<typeof RunAnalysis> | null>(null);
-let requestId = 0;
-
-async function load(refresh = false): Promise<void> {
-  const currentRequest = ++requestId;
-  benchmarkLoading.value = true;
-  runsLoading.value = true;
-  benchmarkError.value = '';
-  runsError.value = '';
-
-  await Promise.all([
-    api
-      .benchmarks(refresh)
-      .then((response) => {
-        if (currentRequest === requestId) benchmarks.value = response.items;
-      })
-      .catch((cause) => {
-        if (currentRequest === requestId)
-          benchmarkError.value =
-            cause instanceof Error ? cause.message : 'Benchmarks could not be loaded.';
-      })
-      .finally(() => {
-        if (currentRequest === requestId) benchmarkLoading.value = false;
-      }),
-    api
-      .runs(refresh)
-      .then((response) => {
-        if (currentRequest !== requestId) return;
-        runs.value = response.items;
-        updated.value = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      })
-      .catch((cause) => {
-        if (currentRequest === requestId)
-          runsError.value = cause instanceof Error ? cause.message : 'Runs could not be loaded.';
-      })
-      .finally(() => {
-        if (currentRequest === requestId) runsLoading.value = false;
-      }),
-  ]);
-}
 
 onMounted(() => void load());
 </script>

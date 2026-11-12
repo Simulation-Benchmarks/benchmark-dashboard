@@ -16,10 +16,11 @@ const steps: TourStep[] = [
     description: 'Select a version in a benchmark table to filter the published runs below.',
   },
   {
-    selector: '.metadata-button',
+    selector: '.grid-icon-button',
     fallback: '.benchmark-grid',
     title: 'Inspect benchmark metadata',
-    description: 'Open benchmark metadata to browse parameters and metrics. Published runs also show software parameters.',
+    description:
+      'Open benchmark metadata to browse parameters and metrics. Published runs also show software parameters.',
   },
   {
     selector: '.notebook-action',

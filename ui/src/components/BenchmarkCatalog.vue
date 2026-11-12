@@ -2,60 +2,20 @@
 import { computed, ref, watch } from 'vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
-import Dialog from 'primevue/dialog';
-import Tabs from 'primevue/tabs';
-import TabList from 'primevue/tablist';
-import Tab from 'primevue/tab';
-import TabPanels from 'primevue/tabpanels';
-import TabPanel from 'primevue/tabpanel';
 import ProgressSpinner from 'primevue/progressspinner';
 import { siJupyter } from 'simple-icons';
-import { api } from '../lib/api';
-import { repositoryUrl, resourceLabel } from '../lib/formatters';
-import type { Benchmark, BenchmarkMetadata } from '../lib/models';
-import MetadataTable from './MetadataTable.vue';
+import { groupBenchmarks, jupyterUrl } from '../lib/catalog';
+import { repositoryUrl } from '../lib/formatters';
+import type { Benchmark } from '../lib/models';
+import BenchmarkMetadataDialog from './BenchmarkMetadataDialog.vue';
+import GridActionLink from './GridActionLink.vue';
 
 const props = defineProps<{ benchmarks: Benchmark[]; loading: boolean; error: string }>();
 const emit = defineEmits<{ select: [benchmark: Benchmark | null] }>();
-function benchmarkName(benchmark: Benchmark): string {
-  const title = benchmark.benchmark_title.trim();
-  const versionSuffix = benchmark.version ? ` (version ${benchmark.version})` : '';
-  return (
-    (versionSuffix && title.endsWith(versionSuffix)
-      ? title.slice(0, -versionSuffix.length)
-      : title) ||
-    benchmark.benchmark_url ||
-    resourceLabel(benchmark.repo)
-  );
-}
-const versionCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
 const expandedBenchmarks = ref<string[]>([]);
-const groupedBenchmarks = computed(() => {
-  const groups = new Map<string, Benchmark[]>();
-  for (const benchmark of props.benchmarks) {
-    const key = benchmarkName(benchmark);
-    const rows = groups.get(key) || [];
-    rows.push(benchmark);
-    groups.set(key, rows);
-  }
-  return [...groups.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, rows]) => ({
-      key,
-      rows: rows.sort((a, b) => {
-        if (!a.version) return b.version ? 1 : 0;
-        if (!b.version) return -1;
-        return versionCollator.compare(b.version, a.version);
-      }),
-    }));
-});
+const groupedBenchmarks = computed(() => groupBenchmarks(props.benchmarks));
 const selected = ref<Benchmark | null>(null);
-const metadataVisible = ref(false);
-const metadataLoading = ref(false);
-const metadataError = ref('');
-const metadataTitle = ref('Benchmark metadata');
-const metadata = ref<BenchmarkMetadata | null>(null);
-let requestId = 0;
+const metadataDialog = ref<InstanceType<typeof BenchmarkMetadataDialog> | null>(null);
 
 watch(
   groupedBenchmarks,
@@ -79,39 +39,6 @@ function toggleOlderVersions(key: string): void {
 function selectRun(benchmark: Benchmark): void {
   selected.value = benchmark;
   emit('select', benchmark);
-}
-
-async function openMetadata(run: Benchmark): Promise<void> {
-  const currentRequest = ++requestId;
-  metadataVisible.value = true;
-  metadataLoading.value = true;
-  metadataError.value = '';
-  metadata.value = null;
-  metadataTitle.value = run.benchmark_title;
-  try {
-    if (!run.benchmark_url) throw new Error('This benchmark does not have a RoHub URL.');
-    const result = await api.benchmarkMetadata(run.benchmark_url);
-    if (currentRequest !== requestId) return;
-    metadata.value = result;
-    metadataTitle.value = result.benchmark || metadataTitle.value;
-  } catch (cause) {
-    if (currentRequest !== requestId) return;
-    metadataError.value =
-      cause instanceof Error ? cause.message : 'Benchmark metadata could not be loaded.';
-  } finally {
-    if (currentRequest === requestId) metadataLoading.value = false;
-  }
-}
-
-function jupyterUrl(repository: string | null): string | null {
-  const name = repository
-    ?.replace(/\/$/, '')
-    .split('/')
-    .at(-1)
-    ?.replace(/\.git$/, '');
-  return name
-    ? `https://hub.nfdi-jupyter.de/v2/gh/Simulation-Benchmarks/${encodeURIComponent(name)}/HEAD`
-    : null;
 }
 </script>
 
@@ -151,39 +78,27 @@ function jupyterUrl(repository: string | null): string | null {
             <Column header-class="action-column" body-class="action-column">
               <template #body="slot">
                 <div class="grid-actions">
-                  <a
+                  <GridActionLink
                     v-if="repositoryUrl(slot.data.repo)"
-                    class="grid-action source-action"
-                    :href="repositoryUrl(slot.data.repo) || undefined"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    class="source-action"
+                    :href="repositoryUrl(slot.data.repo)"
                     title="Open GitHub repository"
-                    aria-label="Open GitHub repository"
-                    @click.stop
                   >
                     <i class="fa-brands fa-github github-icon" aria-hidden="true"></i>
-                  </a>
-                  <a
+                  </GridActionLink>
+                  <GridActionLink
                     v-if="slot.data.benchmark_url"
-                    class="grid-action rohub-action"
+                    class="rohub-action"
                     :href="slot.data.benchmark_url"
-                    target="_blank"
-                    rel="noopener noreferrer"
                     title="Open benchmark in RoHub"
-                    aria-label="Open benchmark in RoHub"
-                    @click.stop
                   >
                     <img class="grid-action-icon" src="/assets/rohub.svg" alt="" />
-                  </a>
-                  <a
+                  </GridActionLink>
+                  <GridActionLink
                     v-if="jupyterUrl(repositoryUrl(slot.data.repo))"
-                    class="grid-action notebook-action"
-                    :href="jupyterUrl(repositoryUrl(slot.data.repo)) || undefined"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    class="notebook-action"
+                    :href="jupyterUrl(repositoryUrl(slot.data.repo))"
                     title="Open repository in Jupyter Notebook"
-                    aria-label="Open repository in Jupyter Notebook"
-                    @click.stop
                   >
                     <svg
                       class="grid-action-icon"
@@ -193,13 +108,13 @@ function jupyterUrl(repository: string | null): string | null {
                     >
                       <path :d="siJupyter.path" />
                     </svg>
-                  </a>
+                  </GridActionLink>
                   <button
-                    class="metadata-button"
+                    class="grid-icon-button"
                     type="button"
                     title="View parameters and metrics"
                     aria-label="View parameters and metrics"
-                    @click.stop="openMetadata(slot.data)"
+                    @click.stop="metadataDialog?.open(slot.data)"
                   >
                     <i class="pi pi-info-circle" aria-hidden="true"></i>
                   </button>
@@ -238,37 +153,5 @@ function jupyterUrl(repository: string | null): string | null {
     </div>
   </section>
 
-  <Dialog
-    v-model:visible="metadataVisible"
-    modal
-    :style="{ width: 'min(760px, 94vw)' }"
-    :content-style="{ height: 'min(520px, 70vh)', overflow: 'hidden' }"
-  >
-    <template #header
-      ><div>
-        <span class="eyebrow">Benchmark metadata</span>
-        <h2>{{ metadataTitle }}</h2>
-      </div></template
-    >
-    <div v-if="metadataLoading" class="metadata-state">
-      <ProgressSpinner aria-label="Loading benchmark metadata" />
-    </div>
-    <div v-else-if="metadataError" class="metadata-state metadata-error">{{ metadataError }}</div>
-    <Tabs v-else-if="metadata" value="parameters">
-      <TabList>
-        <Tab value="parameters" class="parameter-tab"
-          >Parameters ({{ metadata.parameters.length }})</Tab
-        >
-        <Tab value="metrics" class="metric-tab">Metrics ({{ metadata.metrics.length }})</Tab>
-      </TabList>
-      <TabPanels>
-        <TabPanel value="parameters">
-          <MetadataTable :items="metadata.parameters" kind="parameter" />
-        </TabPanel>
-        <TabPanel value="metrics">
-          <MetadataTable :items="metadata.metrics" kind="metric" />
-        </TabPanel>
-      </TabPanels>
-    </Tabs>
-  </Dialog>
+  <BenchmarkMetadataDialog ref="metadataDialog" />
 </template>

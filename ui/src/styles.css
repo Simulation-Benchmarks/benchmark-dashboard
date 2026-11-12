@@ -3,6 +3,7 @@
 @import './styles/shared.css';
 @import './styles/benchmark-catalog.css';
 @import './styles/published-runs.css';
+@import './styles/metadata.css';
 @import './styles/run-analysis.css';
 @import './styles/tables.css';
 @import './styles/comparison-plot.css';

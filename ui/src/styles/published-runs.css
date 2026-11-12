@@ -102,35 +102,9 @@
   min-height: 34px;
   padding-left: 42px;
 }
-.software-group-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-  font-weight: 700;
-}
-.software-group-title a {
-  color: var(--text);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.software-group-toggle {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--text);
-  font: inherit;
-  font-size: 20px;
-  cursor: pointer;
-}
 .software-group-count {
   color: var(--muted);
   font-size: 13px;
-}
-.empty-state {
-  padding: 24px;
-  text-align: center;
-  color: var(--muted);
 }
 .published-date {
   color: var(--muted);

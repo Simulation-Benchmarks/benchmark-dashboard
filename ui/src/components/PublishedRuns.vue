@@ -6,17 +6,17 @@ import ToggleSwitch from 'primevue/toggleswitch';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import ProgressSpinner from 'primevue/progressspinner';
-import Dialog from 'primevue/dialog';
-import { api } from '../lib/api';
-import type { Run, ToolParameter } from '../lib/models';
+import type { Run } from '../lib/models';
 import { formatPublishedDate, formatPublishedDateTooltip } from '../lib/formatters';
-
-type RunRow = Run & { software_group_key: string };
-interface Group {
-  name: string;
-  url: string | null;
-  count: number;
-}
+import {
+  canCompareRuns,
+  groupRuns,
+  softwareGroups,
+  visibleRuns as filterVisibleRuns,
+  type RunRow,
+} from '../lib/publishedRuns';
+import ToolParametersDialog from './ToolParametersDialog.vue';
+import GridActionLink from './GridActionLink.vue';
 
 const props = defineProps<{
   runs: Run[];
@@ -30,60 +30,9 @@ const mainBranchOnly = ref(true);
 const search = ref('');
 const selectedRuns = ref<RunRow[]>([]);
 const expandedGroups = ref<string[]>([]);
-const toolParametersVisible = ref(false);
-const toolParametersLoading = ref(false);
-const toolParametersError = ref('');
-const toolParameters = ref<ToolParameter[]>([]);
-const toolParametersTitle = ref('Software parameters');
-let toolParametersRequestId = 0;
-
-async function openToolParameters(run: Run): Promise<void> {
-  const requestId = ++toolParametersRequestId;
-  toolParametersVisible.value = true;
-  toolParametersLoading.value = true;
-  toolParametersError.value = '';
-  toolParameters.value = [];
-  toolParametersTitle.value = `${run.software_name || 'Tool'} ${run.software_version || ''}`.trim();
-  try {
-    const result = await api.toolParameters(run.run_id);
-    if (requestId === toolParametersRequestId) toolParameters.value = result.items;
-  } catch (cause) {
-    if (requestId === toolParametersRequestId)
-      toolParametersError.value =
-        cause instanceof Error ? cause.message : 'Software parameters could not be loaded.';
-  } finally {
-    if (requestId === toolParametersRequestId) toolParametersLoading.value = false;
-  }
-}
-const visibleRuns = computed(() =>
-  props.runs.filter((run) => !mainBranchOnly.value || run.branch_url?.endsWith('/tree/main')),
-);
-const groupedRuns = computed<RunRow[]>(() => {
-  const term = search.value.trim().toLocaleLowerCase();
-  const bySoftware = new Map<string, RunRow[]>();
-  for (const run of visibleRuns.value) {
-    if (
-      term &&
-      ![
-        run.software_name,
-        run.title,
-        run.description,
-        run.software_url,
-        run.software_version,
-        run.branch_url,
-        run.datePublished,
-      ].some((value) => value?.toLocaleLowerCase().includes(term))
-    )
-      continue;
-    const software_group_key = (
-      run.software_name?.trim() || 'Unknown software'
-    ).toLocaleLowerCase();
-    const group = bySoftware.get(software_group_key) || [];
-    group.push({ ...run, software_group_key });
-    bySoftware.set(software_group_key, group);
-  }
-  return [...bySoftware.values()].flat();
-});
+const toolParametersDialog = ref<InstanceType<typeof ToolParametersDialog> | null>(null);
+const visibleRuns = computed(() => filterVisibleRuns(props.runs, mainBranchOnly.value));
+const groupedRuns = computed(() => groupRuns(visibleRuns.value, search.value));
 const emptyMessage = computed(() => {
   if (props.error) return props.error;
   if (props.runs.length) return 'No runs match the current filters.';
@@ -91,25 +40,8 @@ const emptyMessage = computed(() => {
     ? 'This benchmark has no published runs yet.'
     : 'No published runs are available.';
 });
-const groups = computed(() => {
-  const result = new Map<string, Group>();
-  for (const run of groupedRuns.value) {
-    const group = result.get(run.software_group_key) || {
-      name: run.software_name?.trim() || 'Unknown software',
-      url: null,
-      count: 0,
-    };
-    group.count++;
-    if (run.software_url && (!group.url || run.software_version)) group.url = run.software_url;
-    result.set(run.software_group_key, group);
-  }
-  return result;
-});
-const canCompare = computed(
-  () =>
-    selectedRuns.value.length >= 2 &&
-    selectedRuns.value.every((run) => run.benchmark_url === selectedRuns.value[0].benchmark_url),
-);
+const groups = computed(() => softwareGroups(groupedRuns.value));
+const canCompare = computed(() => canCompareRuns(selectedRuns.value));
 const compareHint = computed(() =>
   selectedRuns.value.length < 2
     ? 'Select at least two runs to compare'
@@ -218,44 +150,33 @@ function openRun(event: { data: RunRow; originalEvent: Event }): void {
         <Column header-class="action-column" body-class="action-column">
           <template #body="slot">
             <div class="grid-actions">
-              <a
+              <GridActionLink
                 v-if="slot.data.branch_url"
-                class="grid-action source-action"
+                class="source-action"
                 :href="slot.data.branch_url"
-                target="_blank"
-                rel="noopener noreferrer"
                 title="Open run GitHub repository"
-                aria-label="Open run GitHub repository"
-                @click.stop
               >
                 <i class="fa-brands fa-github github-icon" aria-hidden="true"></i>
-              </a>
-              <a
-                class="grid-action rohub-action"
+              </GridActionLink>
+              <GridActionLink
+                class="rohub-action"
                 :href="slot.data.run_id"
-                target="_blank"
-                rel="noopener noreferrer"
                 title="Open run in RoHub"
-                aria-label="Open run in RoHub"
-                @click.stop
               >
                 <img class="grid-action-icon" src="/assets/rohub.svg" alt="" />
-              </a>
-              <a
+              </GridActionLink>
+              <GridActionLink
                 v-if="slot.data.graph"
-                class="grid-action graph-action"
+                class="graph-action"
                 :href="slot.data.graph"
-                target="_blank"
-                rel="noopener noreferrer"
                 :title="`Open named graph: ${slot.data.graph}`"
                 aria-label="Open named graph"
-                @click.stop
               >
                 <i class="pi pi-share-alt" aria-hidden="true"></i>
-              </a>
+              </GridActionLink>
 
               <button
-                class="metadata-button"
+                class="grid-icon-button"
                 type="button"
                 title="Open run dialog"
                 aria-label="Open run dialog"
@@ -265,11 +186,11 @@ function openRun(event: { data: RunRow; originalEvent: Event }): void {
               </button>
               <button
                 v-if="slot.data.has_tool_parameters"
-                class="metadata-button"
+                class="grid-icon-button"
                 type="button"
                 title="View software parameters"
                 aria-label="View software parameters"
-                @click.stop="openToolParameters(slot.data)"
+                @click.stop="toolParametersDialog?.open(slot.data)"
               >
                 <i class="pi pi-cog" aria-hidden="true"></i>
               </button>
@@ -302,35 +223,5 @@ function openRun(event: { data: RunRow; originalEvent: Event }): void {
       </div>
     </div>
   </section>
-  <Dialog
-    v-model:visible="toolParametersVisible"
-    modal
-    :style="{ width: 'min(900px, 94vw)' }"
-    :content-style="{ height: 'min(520px, 70vh)', overflow: 'hidden' }"
-  >
-    <template #header
-      ><h2>{{ toolParametersTitle }} parameters</h2></template
-    >
-    <div v-if="toolParametersLoading" class="metadata-state">
-      <ProgressSpinner aria-label="Loading software parameters" />
-    </div>
-    <div v-else-if="toolParametersError" class="metadata-state metadata-error" role="alert">
-      {{ toolParametersError }}
-    </div>
-    <DataTable
-      v-else
-      :value="toolParameters"
-      scrollable
-      scroll-height="min(460px, calc(70vh - 3rem))"
-      class="metadata-grid parameter-grid"
-    >
-      <Column field="name" header="Name" />
-      <Column field="additional_type" header="Type" />
-      <Column field="default_value" header="Default Value" />
-      <Column header="Description">
-        <template #body="slot">{{ slot.data.description || '—' }}</template>
-      </Column>
-      <template #empty>No software parameters are available for this run.</template>
-    </DataTable>
-  </Dialog>
+  <ToolParametersDialog ref="toolParametersDialog" />
 </template>

@@ -52,3 +52,14 @@
 :is(.benchmark-grid, .runs-grid) .p-datatable-tbody > tr.p-datatable-row-selected > td {
   background: transparent;
 }
+
+.benchmark-grid .p-datatable-thead > tr > th:first-child,
+.benchmark-grid .p-datatable-tbody > tr > td:first-child,
+.runs-grid .p-datatable-thead > tr > th:first-child,
+.runs-grid .p-datatable-tbody > tr:not(.p-datatable-row-group-header) > td:first-child {
+  text-align: center;
+}
+.benchmark-grid .p-datatable-thead > tr > th:first-child .p-datatable-column-header-content,
+.runs-grid .p-datatable-thead > tr > th:first-child .p-datatable-column-header-content {
+  justify-content: center;
+}

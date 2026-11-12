@@ -100,10 +100,6 @@ small {
   text-decoration: none;
 }
 
-.grid-action:hover {
-  background: var(--soft);
-}
-
 .grid-action-icon {
   display: block;
   width: 24px;
@@ -111,32 +107,29 @@ small {
   object-fit: contain;
 }
 
-.grid-action:is(
-    .source-action,
-    .rohub-action,
-    .graph-action,
-    .notebook-action,
-    .research-problem-action
-  ):hover {
-  background: transparent;
-}
-
 .github-icon {
   font-size: 22px;
-}
-
-.research-problem-action .fa-solid {
-  font-size: 20px;
 }
 
 .graph-action .pi {
   font-size: 20px;
 }
 
-.centered-column {
-  justify-content: center;
-}
-
 .p-tabpanels {
   padding: 1rem 0 0;
+}
+
+.grid-icon-button {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+}
+.grid-icon-button .pi {
+  font-size: 20px;
 }

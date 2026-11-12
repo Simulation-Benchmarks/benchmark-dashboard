@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onBeforeUnmount, ref } from 'vue';
+import { computed, defineAsyncComponent, ref } from 'vue';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import Tabs from 'primevue/tabs';
@@ -9,16 +9,16 @@ import TabPanels from 'primevue/tabpanels';
 import TabPanel from 'primevue/tabpanel';
 import ProgressSpinner from 'primevue/progressspinner';
 import type { Run } from '../lib/models';
-import type { AnalysisRow, RunAnalysisData } from '../lib/analysis';
+import type { AnalysisRow, RunAnalysisData, SheetSnapshot } from '../lib/analysis';
 import { loadAnalysis } from '../lib/analysis';
-import type { SheetSnapshot } from './ValuesSpreadsheet.vue';
+import { exportAnalysisCsv } from '../lib/exportCsv';
 import ComparisonPlot from './ComparisonPlot.vue';
+import RunQueriesDialog from './RunQueriesDialog.vue';
 const ValuesSpreadsheet = defineAsyncComponent(() => import('./ValuesSpreadsheet.vue'));
 
 const visible = ref(false);
 const queryVisible = ref(false);
-const copiedRunId = ref<string | null>(null);
-const collapsedQueries = ref(new Set<string>());
+const queriesDialog = ref<InstanceType<typeof RunQueriesDialog> | null>(null);
 const loading = ref(false);
 const error = ref('');
 const title = ref('Parameters and metrics');
@@ -48,37 +48,12 @@ const runLabels = computed(
     ) || [],
 );
 let requestId = 0;
-let copyTimer: number | undefined;
-
-function resetCopiedQuery(): void {
-  window.clearTimeout(copyTimer);
-  copyTimer = undefined;
-  copiedRunId.value = null;
-}
-
-function toggleQuery(runId: string): void {
-  const next = new Set(collapsedQueries.value);
-  if (next.has(runId)) next.delete(runId);
-  else next.add(runId);
-  collapsedQueries.value = next;
-}
-
-async function copyQuery(runId: string, query: string): Promise<void> {
-  await navigator.clipboard.writeText(query);
-  resetCopiedQuery();
-  copiedRunId.value = runId;
-  copyTimer = window.setTimeout(resetCopiedQuery, 1600);
-}
-
-onBeforeUnmount(resetCopiedQuery);
-
 async function open(runs: Run[]): Promise<void> {
   if (!runs.length) return;
   const current = ++requestId;
   visible.value = true;
   queryVisible.value = false;
-  resetCopiedQuery();
-  collapsedQueries.value = new Set();
+  queriesDialog.value?.reset();
   loading.value = true;
   error.value = '';
   analysis.value = null;
@@ -105,32 +80,7 @@ function updateSheet(snapshot: SheetSnapshot): void {
 
 function exportCsv(): void {
   if (!analysis.value) return;
-  const columns = [
-    ...(analysis.value.runCount > 1
-      ? [
-          { key: '__software', label: 'Software' },
-          { key: '__software_version', label: 'Software Version' },
-          { key: '__run_id', label: 'Run' },
-        ]
-      : []),
-    ...displayColumns.value,
-  ];
-  const escape = (value: unknown) => `"${String(value ?? '').replaceAll('"', '""')}"`;
-  const csv = [
-    columns.map((column) => escape(column.label)).join(','),
-    ...filteredRows.value.map((row) => columns.map((column) => escape(row[column.key])).join(',')),
-  ].join('\r\n');
-  const name = analysis.value.benchmark
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
-  const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `${name || 'benchmark-values'}${analysis.value.runCount > 1 ? '-comparison' : ''}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
+  exportAnalysisCsv(analysis.value, displayColumns.value, filteredRows.value);
 }
 </script>
 
@@ -210,70 +160,5 @@ function exportCsv(): void {
     </Tabs>
   </Dialog>
 
-  <Dialog
-    v-model:visible="queryVisible"
-    modal
-    maximizable
-    :style="{ width: 'min(960px, 94vw)' }"
-    :content-style="{ maxHeight: '70vh', overflow: 'auto' }"
-    @hide="resetCopiedQuery"
-  >
-    <template #header>
-      <h2>{{ analysis?.runCount === 1 ? 'SPARQL query' : 'SPARQL queries' }}</h2>
-    </template>
-    <p class="endpoint-notice">
-      Run copied queries directly on the RoHub SPARQL endpoint:
-      <a
-        href="https://virtuoso-rohub2020-production.apps.bst2.paas.psnc.pl/sparql"
-        target="_blank"
-        rel="noopener noreferrer"
-        >virtuoso-rohub2020-production.apps.bst2.paas.psnc.pl/sparql</a
-      >
-    </p>
-    <div class="run-query-list">
-      <section
-        v-for="(detail, index) in analysis?.runDetails || []"
-        :key="detail.runId"
-        class="run-query-item"
-      >
-        <div class="run-query-heading">
-          <div>
-            <h3>
-              {{ detail.softwareName }} · {{ detail.softwareVersion || 'Version unavailable' }}
-            </h3>
-            <small>{{ detail.runId }}</small>
-          </div>
-          <div v-if="detail.query" class="log-actions">
-            <button
-              class="log-action"
-              type="button"
-              :aria-label="copiedRunId === detail.runId ? 'Query copied' : 'Copy query'"
-              :title="copiedRunId === detail.runId ? 'Query copied' : 'Copy query'"
-              @click="copyQuery(detail.runId, detail.query)"
-            >
-              <i class="pi" :class="copiedRunId === detail.runId ? 'pi-check' : 'pi-copy'"></i>
-            </button>
-            <button
-              class="log-action"
-              type="button"
-              :aria-expanded="!collapsedQueries.has(detail.runId)"
-              :aria-controls="`run-query-${index}`"
-              :aria-label="collapsedQueries.has(detail.runId) ? 'Expand query' : 'Collapse query'"
-              @click="toggleQuery(detail.runId)"
-            >
-              <i
-                class="pi"
-                :class="collapsedQueries.has(detail.runId) ? 'pi-chevron-down' : 'pi-chevron-up'"
-              ></i>
-            </button>
-          </div>
-        </div>
-        <pre
-          v-if="detail.query && !collapsedQueries.has(detail.runId)"
-          :id="`run-query-${index}`"
-          >{{ detail.query }}</pre>
-        <p v-if="!detail.query">Query unavailable.</p>
-      </section>
-    </div>
-  </Dialog>
+  <RunQueriesDialog ref="queriesDialog" v-model:visible="queryVisible" :analysis="analysis" />
 </template>
