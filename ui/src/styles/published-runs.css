@@ -53,10 +53,11 @@
   width: 100%;
   border: 1px solid var(--text);
   border-radius: 0;
-  overflow: hidden;
+  overflow-x: auto;
 }
 .runs-grid .p-datatable-table {
   width: 100%;
+  table-layout: fixed;
 }
 .runs-grid .p-datatable-thead > tr > th {
   background: var(--soft);
@@ -65,6 +66,14 @@
 }
 .runs-grid td {
   color: var(--text);
+}
+.runs-grid .version-column {
+  width: 120px;
+  overflow-wrap: anywhere;
+}
+.runs-grid .publish-date-column {
+  width: 180px;
+  overflow-wrap: anywhere;
 }
 .runs-grid .p-datatable-row-group-header > td {
   position: relative;

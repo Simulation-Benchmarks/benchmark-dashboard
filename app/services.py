@@ -14,6 +14,8 @@ from typing import Any
 
 from dotenv import load_dotenv
 
+from .queries import build_benchmarks_query, build_published_runs_query
+
 # Support a service-local .env file during development. Environment variables
 # supplied by the runtime (for example, Podman's --env-file) take precedence.
 load_dotenv(Path(__file__).resolve().parent / ".env", override=False)
@@ -316,7 +318,6 @@ def load_runs(*, force: bool = False) -> list[dict[str, Any]]:
             return _cache[1]
 
         from semantic_benchmark.rohub.provenance import (
-            build_published_runs_query,
             build_run_named_graphs_query,
             build_runs_with_tool_parameters_query,
         )
@@ -354,6 +355,7 @@ def load_runs(*, force: bool = False) -> list[dict[str, Any]]:
             {
                 "run_id": row.get("run_id"),
                 "title": _json_value(row.get("title")),
+                "description": _json_value(row.get("description")),
                 "benchmark_url": row.get("benchmark_url"),
                 "benchmark_title": _json_value(row.get("benchmark_title")),
                 "research_problem_uri": row.get("research_problem_uri"),
@@ -399,8 +401,6 @@ def load_benchmarks(*, force: bool = False) -> list[dict[str, Any]]:
         ):
             return _benchmarks_cache[1]
 
-        from semantic_benchmark.rohub import build_benchmarks_query
-
         rows = _sparql(build_benchmarks_query())
         by_url: dict[str, dict[str, Any]] = {}
         for row in rows:
@@ -413,6 +413,7 @@ def load_benchmarks(*, force: bool = False) -> list[dict[str, Any]]:
                 by_url[url] = {
                     "benchmark_url": url,
                     "benchmark_title": _json_value(row.get("benchmark_title")),
+                    "description": _json_value(row.get("description")),
                     "research_problem_uri": row.get("research_problem_uri"),
                     "version": _json_value(row.get("version")),
                     "repo": row.get("repo"),

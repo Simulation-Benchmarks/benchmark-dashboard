@@ -134,8 +134,21 @@ function jupyterUrl(repository: string | null): string | null {
             @row-select="selectRun($event.data)"
           >
             <Column selection-mode="single" header-style="width: 48px" />
-            <Column field="version" header="Benchmark Version" header-style="width: 200px" />
-            <Column header-style="width: 180px">
+            <Column
+              field="version"
+              header="Version"
+              header-class="version-column"
+              body-class="version-column"
+            />
+            <Column
+              field="description"
+              header="Description"
+              header-class="description-column"
+              body-class="description-column"
+            >
+              <template #body="slot">{{ slot.data.description || '—' }}</template>
+            </Column>
+            <Column header-class="action-column" body-class="action-column">
               <template #body="slot">
                 <div class="grid-actions">
                   <a

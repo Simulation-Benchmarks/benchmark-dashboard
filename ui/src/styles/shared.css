@@ -79,6 +79,16 @@ small {
   gap: 8px;
   white-space: nowrap;
 }
+
+:is(.benchmark-grid, .runs-grid) .action-column {
+  width: 172px;
+  white-space: nowrap;
+}
+
+:is(.benchmark-grid, .runs-grid) .description-column {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
 .grid-action {
   display: inline-flex;
   align-items: center;

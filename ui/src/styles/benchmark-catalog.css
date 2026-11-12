@@ -9,7 +9,16 @@
   width: 100%;
   border: 1px solid var(--text);
   border-radius: 0;
-  overflow: hidden;
+  overflow-x: auto;
+}
+.benchmark-grid .p-datatable-table {
+  width: 100%;
+  min-width: 600px;
+  table-layout: fixed;
+}
+.benchmark-grid .version-column {
+  width: 120px;
+  overflow-wrap: anywhere;
 }
 .benchmark-grid .p-datatable-thead > tr > th {
   background: color-mix(in srgb, var(--soft) 82%, var(--parameter-soft));

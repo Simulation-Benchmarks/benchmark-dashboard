@@ -67,6 +67,7 @@ const groupedRuns = computed<RunRow[]>(() => {
       ![
         run.software_name,
         run.title,
+        run.description,
         run.software_url,
         run.software_version,
         run.branch_url,
@@ -177,18 +178,26 @@ function openRun(event: { data: RunRow; originalEvent: Event }): void {
         row-group-mode="subheader"
         group-rows-by="software_group_key"
         expandable-row-groups
-        resizable-columns
-        column-resize-mode="fit"
         class="runs-grid"
-        :pt="{ rowGroupHeaderCell: { colspan: 4 } }"
-        table-style="min-width: 640px"
+        :pt="{ rowGroupHeaderCell: { colspan: 5 } }"
+        table-style="min-width: 760px"
         @row-click="openRun"
       >
         <Column selection-mode="multiple" header-style="width: 48px" />
-        <Column field="software_version" header="Software Version">
+        <Column
+          field="software_version"
+          header="Version"
+          header-class="version-column"
+          body-class="version-column"
+        >
           <template #body="slot">{{ slot.data.software_version || '—' }}</template>
         </Column>
-        <Column field="datePublished" header="Publish Date">
+        <Column
+          field="datePublished"
+          header="Publish Date"
+          header-class="publish-date-column"
+          body-class="publish-date-column"
+        >
           <template #body="slot">
             <span
               class="published-date"
@@ -198,7 +207,15 @@ function openRun(event: { data: RunRow; originalEvent: Event }): void {
             </span>
           </template>
         </Column>
-        <Column header-style="width: 180px">
+        <Column
+          field="description"
+          header="Description"
+          header-class="description-column"
+          body-class="description-column"
+        >
+          <template #body="slot">{{ slot.data.description || '—' }}</template>
+        </Column>
+        <Column header-class="action-column" body-class="action-column">
           <template #body="slot">
             <div class="grid-actions">
               <a
