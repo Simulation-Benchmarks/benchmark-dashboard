@@ -2,28 +2,37 @@
 import { computed, ref, watch } from 'vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
+import InputText from 'primevue/inputtext';
+import Button from 'primevue/button';
 import ProgressSpinner from 'primevue/progressspinner';
 import { siJupyter } from 'simple-icons';
-import { groupBenchmarks, jupyterUrl } from '../lib/catalog';
+import { filterBenchmarks, groupBenchmarks, jupyterUrl } from '../lib/catalog';
 import { repositoryUrl } from '../lib/formatters';
 import type { Benchmark } from '../lib/models';
 import BenchmarkMetadataDialog from './BenchmarkMetadataDialog.vue';
 import GridActionLink from './GridActionLink.vue';
 
-const props = defineProps<{ benchmarks: Benchmark[]; loading: boolean; error: string }>();
-const emit = defineEmits<{ select: [benchmark: Benchmark | null] }>();
+const props = defineProps<{
+  benchmarks: Benchmark[];
+  loading: boolean;
+  refreshing: boolean;
+  error: string;
+}>();
+const emit = defineEmits<{ select: [benchmark: Benchmark | null]; refresh: [] }>();
+const search = ref('');
 const expandedBenchmarks = ref<string[]>([]);
-const groupedBenchmarks = computed(() => groupBenchmarks(props.benchmarks));
+const groupedBenchmarks = computed(() =>
+  groupBenchmarks(filterBenchmarks(props.benchmarks, search.value)),
+);
 const selected = ref<Benchmark | null>(null);
 const metadataDialog = ref<InstanceType<typeof BenchmarkMetadataDialog> | null>(null);
 
 watch(
-  groupedBenchmarks,
-  (items) => {
-    const rows = items.flatMap(({ rows }) => rows);
+  () => props.benchmarks,
+  (benchmarks) => {
     selected.value =
-      rows.find((item) => item.benchmark_url === selected.value?.benchmark_url) ||
-      items[0]?.rows[0] ||
+      benchmarks.find((item) => item.benchmark_url === selected.value?.benchmark_url) ||
+      groupBenchmarks(benchmarks)[0]?.rows[0] ||
       null;
     emit('select', selected.value);
   },
@@ -45,6 +54,24 @@ function selectRun(benchmark: Benchmark): void {
 <template>
   <section class="section-block">
     <div class="section-heading"><h2 class="section-title">Benchmarks</h2></div>
+    <div class="benchmark-toolbar">
+      <span class="search">
+        <i class="pi pi-search" aria-hidden="true"></i>
+        <InputText
+          v-model="search"
+          type="search"
+          placeholder="Search benchmarks..."
+          aria-label="Search benchmarks"
+        />
+      </span>
+      <Button
+        label="Reload"
+        icon="pi pi-refresh"
+        class="reload-button"
+        :loading="refreshing"
+        @click="emit('refresh')"
+      />
+    </div>
     <p v-if="error && groupedBenchmarks.length" class="grid-error" role="alert">{{ error }}</p>
     <div class="grid-loading-wrapper benchmark-wrapper" :class="{ 'is-loading': loading }">
       <div class="benchmark-list">
@@ -57,6 +84,7 @@ function selectRun(benchmark: Benchmark): void {
             :value="expandedBenchmarks.includes(group.key) ? group.rows : group.rows.slice(0, 1)"
             data-key="benchmark_url"
             selection-mode="single"
+            removable-sort
             class="benchmark-grid"
             @row-select="selectRun($event.data)"
           >
@@ -64,12 +92,14 @@ function selectRun(benchmark: Benchmark): void {
             <Column
               field="version"
               header="Version"
+              sortable
               header-class="version-column"
               body-class="version-column"
             />
             <Column
               field="description"
               header="Description"
+              sortable
               header-class="description-column"
               body-class="description-column"
             >
@@ -144,7 +174,9 @@ function selectRun(benchmark: Benchmark): void {
         </article>
         <p v-if="!groupedBenchmarks.length && !loading" class="benchmark-empty">
           <span v-if="error" class="error" role="alert">{{ error }}</span>
-          <span v-else>No benchmarks are available.</span>
+          <span v-else>{{
+            benchmarks.length ? 'No benchmarks match the search.' : 'No benchmarks are available.'
+          }}</span>
         </p>
       </div>
       <div v-if="loading" class="grid-loading-overlay">

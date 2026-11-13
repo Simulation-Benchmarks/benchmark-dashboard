@@ -2,6 +2,15 @@
   display: grid;
   gap: 20px;
 }
+.benchmark-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.benchmark-toolbar .p-button {
+  height: 44px;
+}
 .benchmark-card {
   min-width: 0;
 }

@@ -25,7 +25,7 @@ const props = defineProps<{
   benchmarkSelected: boolean;
   updated: string;
 }>();
-const emit = defineEmits<{ refresh: []; analyze: [runs: Run[]] }>();
+const emit = defineEmits<{ analyze: [runs: Run[]] }>();
 const mainBranchOnly = ref(true);
 const search = ref('');
 const selectedRuns = ref<RunRow[]>([]);
@@ -90,13 +90,6 @@ function openRun(event: { data: RunRow; originalEvent: Event }): void {
           :title="compareHint"
           @click="emit('analyze', selectedRuns)"
       /></span>
-      <Button
-        label="Reload"
-        icon="pi pi-refresh"
-        class="reload-button"
-        :loading="loading"
-        @click="emit('refresh')"
-      />
     </div>
     <div class="summary">
       <span>Updated {{ updated }}</span>
@@ -109,6 +102,9 @@ function openRun(event: { data: RunRow; originalEvent: Event }): void {
         data-key="run_id"
         row-group-mode="subheader"
         group-rows-by="software_group_key"
+        sort-field="software_group_key"
+        :sort-order="1"
+        removable-sort
         expandable-row-groups
         class="runs-grid"
         :pt="{ rowGroupHeaderCell: { colspan: 5 } }"
@@ -119,6 +115,7 @@ function openRun(event: { data: RunRow; originalEvent: Event }): void {
         <Column
           field="software_version"
           header="Version"
+          sortable
           header-class="version-column"
           body-class="version-column"
         >
@@ -127,6 +124,7 @@ function openRun(event: { data: RunRow; originalEvent: Event }): void {
         <Column
           field="datePublished"
           header="Publish Date"
+          sortable
           header-class="publish-date-column"
           body-class="publish-date-column"
         >
@@ -142,6 +140,7 @@ function openRun(event: { data: RunRow; originalEvent: Event }): void {
         <Column
           field="description"
           header="Description"
+          sortable
           header-class="description-column"
           body-class="description-column"
         >

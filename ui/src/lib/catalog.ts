@@ -40,6 +40,16 @@ export function groupBenchmarks(benchmarks: Benchmark[]): BenchmarkGroup[] {
     }));
 }
 
+export function filterBenchmarks(benchmarks: Benchmark[], search: string): Benchmark[] {
+  const term = search.trim().toLocaleLowerCase();
+  if (!term) return benchmarks;
+  return benchmarks.filter((benchmark) =>
+    [benchmark.benchmark_title, benchmark.version, benchmark.description, benchmark.repo].some(
+      (value) => value?.toLocaleLowerCase().includes(term),
+    ),
+  );
+}
+
 export function jupyterUrl(repository: string | null): string | null {
   const name = repository
     ?.replace(/\/$/, '')

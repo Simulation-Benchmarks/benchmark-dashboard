@@ -46,8 +46,10 @@ onMounted(() => void load());
     <BenchmarkCatalog
       :benchmarks="benchmarks"
       :loading="benchmarkLoading"
+      :refreshing="benchmarkLoading || runsLoading"
       :error="benchmarkError"
       @select="selectedBenchmarkUrl = $event?.benchmark_url || ''"
+      @refresh="load(true)"
     />
     <PublishedRuns
       :runs="publishedRuns"
@@ -55,7 +57,6 @@ onMounted(() => void load());
       :error="runsError"
       :benchmark-selected="Boolean(selectedBenchmarkUrl)"
       :updated="updated"
-      @refresh="load(true)"
       @analyze="analysis?.open($event)"
     />
   </main>
