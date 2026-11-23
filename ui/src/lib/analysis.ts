@@ -2,6 +2,11 @@ import { api } from './api';
 import type { Run, ValueColumn } from './models';
 
 export type AnalysisRow = Record<string, unknown>;
+export interface SheetSnapshot {
+  columns: ValueColumn[];
+  rows: AnalysisRow[];
+  visibleRows: AnalysisRow[];
+}
 export interface RunAnalysisData {
   benchmark: string;
   rows: AnalysisRow[];

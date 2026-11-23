@@ -14,6 +14,8 @@ from typing import Any
 
 from dotenv import load_dotenv
 
+from semantic_benchmark.rohub import build_benchmarks_query, build_published_runs_query
+
 # Support a service-local .env file during development. Environment variables
 # supplied by the runtime (for example, Podman's --env-file) take precedence.
 load_dotenv(Path(__file__).resolve().parent / ".env", override=False)
@@ -162,7 +164,7 @@ def _benchmark_metadata(
 
 
 @lru_cache(maxsize=128)
-def _run_fields(graph: str) -> tuple[list[str], list[str]]:
+def _run_fields(graph: str, legacy: bool) -> tuple[list[str], list[str]]:
     from semantic_benchmark.rohub.provenance import (
         configure_rohub,
         discover_benchmark_fields,
@@ -170,7 +172,7 @@ def _run_fields(graph: str) -> tuple[list[str], list[str]]:
 
     try:
         configure_rohub(use_production_rohub=True)
-        parameters, metrics = discover_benchmark_fields([graph])
+        parameters, metrics = discover_benchmark_fields([graph], legacy=legacy)
     except Exception as error:
         raise UpstreamError(
             "Could not discover parameters and metrics for this run"
@@ -186,13 +188,19 @@ def _discover_run_fields(run: dict[str, Any]) -> tuple[list[str], list[str]]:
     graph = run.get("graph")
     if not graph:
         raise UpstreamError("This run does not have a named graph")
-    return _run_fields(graph)
+    return _run_fields(graph, legacy=not run.get("is_provenance_run", False))
 
 
-def _dynamic_query(parameters: list[str], metrics: list[str], graph: str) -> str:
-    from semantic_benchmark.rohub.provenance import build_dynamic_query
+def _dynamic_query(
+    parameters: list[str], metrics: list[str], graph: str, legacy: bool
+) -> str:
+    from semantic_benchmark.rohub.provenance import (
+        build_dynamic_query,
+        build_legacy_dynamic_query,
+    )
 
-    return build_dynamic_query(
+    builder = build_legacy_dynamic_query if legacy else build_dynamic_query
+    return builder(
         parameters=parameters,
         metrics=metrics,
         named_graphs=[graph],
@@ -242,7 +250,9 @@ def query_run_values(run_id: str) -> dict[str, Any]:
         for kind, labels in (("parameter", parameters), ("metric", metrics))
         for label in labels
     ]
-    query = _dynamic_query(parameters, metrics, graph)
+    query = _dynamic_query(
+        parameters, metrics, graph, legacy=not run.get("is_provenance_run", False)
+    )
     result_rows = _sparql(query)
     return {
         "run_id": run_id,
@@ -272,6 +282,29 @@ def load_run_metadata(run_id: str) -> dict[str, Any]:
     return _benchmark_metadata(benchmark_url)
 
 
+def load_tool_parameters(run_id: str) -> list[dict[str, str | None]]:
+    """Load tool inputs from the published run's named graph."""
+    run = next((item for item in load_runs() if item.get("run_id") == run_id), None)
+    if run is None:
+        raise RunNotFoundError(f"Published run not found: {run_id}")
+    graph = run.get("graph")
+    if not graph:
+        raise UpstreamError("This run does not have a named graph")
+
+    from semantic_benchmark.rohub import build_tool_parameters_query
+
+    rows = _sparql(build_tool_parameters_query(run_id, graph))
+    return [
+        {
+            "name": _json_value(row.get("name")),
+            "additional_type": _json_value(row.get("additional_type")),
+            "default_value": _json_value(row.get("default_value")),
+            "description": _json_value(row.get("description")),
+        }
+        for row in rows
+    ]
+
+
 def load_benchmark_metadata(benchmark_url: str) -> dict[str, Any]:
     """Load parameter and metric metadata for one benchmark URL."""
     return _benchmark_metadata(benchmark_url)
@@ -285,8 +318,8 @@ def load_runs(*, force: bool = False) -> list[dict[str, Any]]:
             return _cache[1]
 
         from semantic_benchmark.rohub.provenance import (
-            build_published_runs_query,
             build_run_named_graphs_query,
+            build_runs_with_tool_parameters_query,
         )
 
         query_rows = _sparql(build_published_runs_query())
@@ -302,13 +335,19 @@ def load_runs(*, force: bool = False) -> list[dict[str, Any]]:
         rows = list(rows_by_run.values())
         run_ids = [row["run_id"] for row in rows if row.get("run_id")]
         graphs = _sparql(build_run_named_graphs_query(run_ids)) if run_ids else []
+        graphs.sort(key=lambda row: row.get("source") != "linked")
         graph_by_run: dict[str, str] = {}
+        metadata_by_run: dict[str, dict[str, str | None]] = {}
         for graph_row in graphs:
             if graph_row.get("run_id") and graph_row.get("graph"):
                 graph_by_run.setdefault(graph_row["run_id"], graph_row["graph"])
-        metadata_by_run = {
-            row["run_id"]: row
-            for row in graphs
+                metadata_by_run.setdefault(graph_row["run_id"], graph_row)
+        parameter_rows = (
+            _sparql(build_runs_with_tool_parameters_query(run_ids)) if run_ids else []
+        )
+        runs_with_tool_parameters = {
+            row["run_id"]
+            for row in parameter_rows
             if row.get("graph") == graph_by_run.get(row.get("run_id"))
         }
 
@@ -316,6 +355,7 @@ def load_runs(*, force: bool = False) -> list[dict[str, Any]]:
             {
                 "run_id": row.get("run_id"),
                 "title": _json_value(row.get("title")),
+                "description": _json_value(row.get("description")),
                 "benchmark_url": row.get("benchmark_url"),
                 "benchmark_title": _json_value(row.get("benchmark_title")),
                 "research_problem_uri": row.get("research_problem_uri"),
@@ -330,6 +370,11 @@ def load_runs(*, force: bool = False) -> list[dict[str, Any]]:
                 "software_version": _json_value(
                     metadata_by_run.get(row.get("run_id"), {}).get("software_version")
                 ),
+                "is_provenance_run": (
+                    metadata_by_run.get(row.get("run_id"), {}).get("profile")
+                    == "provenance"
+                ),
+                "has_tool_parameters": row.get("run_id") in runs_with_tool_parameters,
                 "datePublished": row.get("datePublished"),
                 "version": row.get("version"),
                 "benchmark": "",
@@ -356,8 +401,6 @@ def load_benchmarks(*, force: bool = False) -> list[dict[str, Any]]:
         ):
             return _benchmarks_cache[1]
 
-        from semantic_benchmark.rohub import build_benchmarks_query
-
         rows = _sparql(build_benchmarks_query())
         by_url: dict[str, dict[str, Any]] = {}
         for row in rows:
@@ -370,6 +413,7 @@ def load_benchmarks(*, force: bool = False) -> list[dict[str, Any]]:
                 by_url[url] = {
                     "benchmark_url": url,
                     "benchmark_title": _json_value(row.get("benchmark_title")),
+                    "description": _json_value(row.get("description")),
                     "research_problem_uri": row.get("research_problem_uri"),
                     "version": _json_value(row.get("version")),
                     "repo": row.get("repo"),

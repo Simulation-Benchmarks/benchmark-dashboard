@@ -2,6 +2,15 @@
   display: grid;
   gap: 20px;
 }
+.benchmark-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.benchmark-toolbar .p-button {
+  height: 44px;
+}
 .benchmark-card {
   min-width: 0;
 }
@@ -9,7 +18,16 @@
   width: 100%;
   border: 1px solid var(--text);
   border-radius: 0;
-  overflow: hidden;
+  overflow-x: auto;
+}
+.benchmark-grid .p-datatable-table {
+  width: 100%;
+  min-width: 600px;
+  table-layout: fixed;
+}
+.benchmark-grid .version-column {
+  width: 120px;
+  overflow-wrap: anywhere;
 }
 .benchmark-grid .p-datatable-thead > tr > th {
   background: color-mix(in srgb, var(--soft) 82%, var(--parameter-soft));
@@ -55,83 +73,4 @@
 }
 .benchmark-empty {
   padding: 1rem;
-}
-.benchmark-grid .p-datatable-thead > tr > th:not(:nth-child(2)),
-.benchmark-grid .p-datatable-tbody > tr:not(.p-datatable-row-group-header) > td:not(:nth-child(2)),
-.runs-grid
-  .p-datatable-thead
-  > tr
-  > th:is(:first-child, :nth-child(4), :nth-child(5), :nth-child(6)),
-.runs-grid
-  .p-datatable-tbody
-  > tr:not(.p-datatable-row-group-header)
-  > td:is(:first-child, :nth-child(4), :nth-child(5), :nth-child(6)) {
-  text-align: center;
-}
-.benchmark-grid .p-datatable-thead > tr > th:not(:nth-child(2)) .p-datatable-column-header-content,
-.runs-grid
-  .p-datatable-thead
-  > tr
-  > th:is(:first-child, :nth-child(4), :nth-child(5), :nth-child(6))
-  .p-datatable-column-header-content {
-  justify-content: center;
-}
-
-.metadata-button {
-  display: inline-grid;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  place-items: center;
-  border: 0;
-  background: transparent;
-  color: var(--accent);
-  cursor: pointer;
-}
-.metadata-button .pi {
-  font-size: 20px;
-}
-.metadata-grid {
-  width: 100%;
-  min-height: 96px;
-  border: 1px solid var(--text);
-}
-.metadata-state {
-  display: grid;
-  min-height: 220px;
-  place-items: center;
-}
-.metadata-error {
-  padding: 1rem;
-  color: var(--text);
-  text-align: center;
-}
-.parameter-tab {
-  color: var(--parameter);
-}
-.metric-tab {
-  color: var(--metric);
-}
-.parameter-tab.p-tab-active {
-  background: var(--parameter-soft);
-}
-.metric-tab.p-tab-active {
-  background: var(--metric-soft);
-}
-.parameter-grid .p-datatable-thead > tr > th {
-  background: var(--parameter-soft);
-  color: var(--parameter);
-}
-.metric-grid .p-datatable-thead > tr > th {
-  background: var(--metric-soft);
-  color: var(--metric);
-}
-.parameter-grid .p-datatable-tbody > tr > td {
-  background: var(--parameter-cell);
-}
-.metric-grid .p-datatable-tbody > tr > td {
-  background: var(--metric-cell);
-}
-.unit-link {
-  color: var(--accent);
 }

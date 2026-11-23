@@ -13,13 +13,15 @@ const steps: TourStep[] = [
   {
     selector: '.benchmark-grid',
     title: 'Choose a benchmark',
-    description: 'Select a version in a benchmark table to filter the published runs below.',
+    description:
+      'Search or sort benchmark versions, then select one to filter the published runs below.',
   },
   {
-    selector: '.metadata-button',
+    selector: '.grid-icon-button',
     fallback: '.benchmark-grid',
     title: 'Inspect benchmark metadata',
-    description: 'Open the metadata dialog to browse the benchmark parameters and metrics.',
+    description:
+      'Open benchmark metadata to browse parameters and metrics. Published runs also show software parameters.',
   },
   {
     selector: '.notebook-action',
@@ -29,10 +31,10 @@ const steps: TourStep[] = [
       'Use the Source, RoHub, and Notebook links to open the benchmark repository, its RoHub record, or its Jupyter environment.',
   },
   {
-    selector: '.search',
+    selector: '.toolbar .search',
     title: 'Find published runs',
     description:
-      'Search by software, version, repository, branch, or publication date. Turn off Latest Release to show all runs.',
+      'Search by software, description, version, repository, branch, or publication date. Sort runs from the column headers, or turn off Latest Release to show all runs.',
   },
   {
     selector: '.runs-grid',
@@ -56,7 +58,8 @@ const steps: TourStep[] = [
   {
     selector: '.reload-button',
     title: 'Refresh the data',
-    description: 'Choose Reload to request the latest runs instead of using cached results.',
+    description:
+      'Choose Reload to request the latest benchmarks and runs instead of using cached results.',
   },
   {
     selector: '.log-launcher',

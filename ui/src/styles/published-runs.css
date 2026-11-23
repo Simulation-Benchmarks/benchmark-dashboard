@@ -3,24 +3,6 @@
   gap: 12px;
   align-items: center;
 }
-.search {
-  position: relative;
-  display: flex;
-  flex: 1;
-  height: 44px;
-}
-.search i {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--muted);
-}
-.search input {
-  width: 100%;
-  height: 100%;
-  padding-left: 40px;
-}
 .release-filter {
   display: inline-flex;
   align-items: center;
@@ -35,12 +17,6 @@
   display: flex;
   height: 44px;
 }
-.reload-button.p-button,
-.logs-button.p-button {
-  width: 128px;
-  height: 44px;
-  justify-content: center;
-}
 .summary {
   display: flex;
   justify-content: flex-end;
@@ -53,10 +29,14 @@
   width: 100%;
   border: 1px solid var(--text);
   border-radius: 0;
-  overflow: hidden;
+  overflow-x: auto;
 }
 .runs-grid .p-datatable-table {
   width: 100%;
+  table-layout: fixed;
+}
+.runs-grid .action-column {
+  width: 212px;
 }
 .runs-grid .p-datatable-thead > tr > th {
   background: var(--soft);
@@ -65,6 +45,14 @@
 }
 .runs-grid td {
   color: var(--text);
+}
+.runs-grid .version-column {
+  width: 120px;
+  overflow-wrap: anywhere;
+}
+.runs-grid .publish-date-column {
+  width: 180px;
+  overflow-wrap: anywhere;
 }
 .runs-grid .p-datatable-row-group-header > td {
   position: relative;
@@ -90,35 +78,9 @@
   min-height: 34px;
   padding-left: 42px;
 }
-.software-group-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-  font-weight: 700;
-}
-.software-group-title a {
-  color: var(--text);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.software-group-toggle {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--text);
-  font: inherit;
-  font-size: 20px;
-  cursor: pointer;
-}
 .software-group-count {
   color: var(--muted);
   font-size: 13px;
-}
-.empty-state {
-  padding: 24px;
-  text-align: center;
-  color: var(--muted);
 }
 .published-date {
   color: var(--muted);

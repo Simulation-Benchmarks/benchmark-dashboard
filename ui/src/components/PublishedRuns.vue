@@ -8,13 +8,15 @@ import Column from 'primevue/column';
 import ProgressSpinner from 'primevue/progressspinner';
 import type { Run } from '../lib/models';
 import { formatPublishedDate, formatPublishedDateTooltip } from '../lib/formatters';
-
-type RunRow = Run & { software_group_key: string };
-interface Group {
-  name: string;
-  url: string | null;
-  count: number;
-}
+import {
+  canCompareRuns,
+  groupRuns,
+  softwareGroups,
+  visibleRuns as filterVisibleRuns,
+  type RunRow,
+} from '../lib/publishedRuns';
+import ToolParametersDialog from './ToolParametersDialog.vue';
+import GridActionLink from './GridActionLink.vue';
 
 const props = defineProps<{
   runs: Run[];
@@ -23,39 +25,14 @@ const props = defineProps<{
   benchmarkSelected: boolean;
   updated: string;
 }>();
-const emit = defineEmits<{ refresh: []; analyze: [runs: Run[]] }>();
+const emit = defineEmits<{ analyze: [runs: Run[]] }>();
 const mainBranchOnly = ref(true);
 const search = ref('');
 const selectedRuns = ref<RunRow[]>([]);
 const expandedGroups = ref<string[]>([]);
-const visibleRuns = computed(() =>
-  props.runs.filter((run) => !mainBranchOnly.value || run.branch_url?.endsWith('/tree/main')),
-);
-const groupedRuns = computed<RunRow[]>(() => {
-  const term = search.value.trim().toLocaleLowerCase();
-  const bySoftware = new Map<string, RunRow[]>();
-  for (const run of visibleRuns.value) {
-    if (
-      term &&
-      ![
-        run.software_name,
-        run.title,
-        run.software_url,
-        run.software_version,
-        run.branch_url,
-        run.datePublished,
-      ].some((value) => value?.toLocaleLowerCase().includes(term))
-    )
-      continue;
-    const software_group_key = (
-      run.software_name?.trim() || 'Unknown software'
-    ).toLocaleLowerCase();
-    const group = bySoftware.get(software_group_key) || [];
-    group.push({ ...run, software_group_key });
-    bySoftware.set(software_group_key, group);
-  }
-  return [...bySoftware.values()].flat();
-});
+const toolParametersDialog = ref<InstanceType<typeof ToolParametersDialog> | null>(null);
+const visibleRuns = computed(() => filterVisibleRuns(props.runs, mainBranchOnly.value));
+const groupedRuns = computed(() => groupRuns(visibleRuns.value, search.value));
 const emptyMessage = computed(() => {
   if (props.error) return props.error;
   if (props.runs.length) return 'No runs match the current filters.';
@@ -63,25 +40,8 @@ const emptyMessage = computed(() => {
     ? 'This benchmark has no published runs yet.'
     : 'No published runs are available.';
 });
-const groups = computed(() => {
-  const result = new Map<string, Group>();
-  for (const run of groupedRuns.value) {
-    const group = result.get(run.software_group_key) || {
-      name: run.software_name?.trim() || 'Unknown software',
-      url: null,
-      count: 0,
-    };
-    group.count++;
-    if (run.software_url && (!group.url || run.software_version)) group.url = run.software_url;
-    result.set(run.software_group_key, group);
-  }
-  return result;
-});
-const canCompare = computed(
-  () =>
-    selectedRuns.value.length >= 2 &&
-    selectedRuns.value.every((run) => run.benchmark_url === selectedRuns.value[0].benchmark_url),
-);
+const groups = computed(() => softwareGroups(groupedRuns.value));
+const canCompare = computed(() => canCompareRuns(selectedRuns.value));
 const compareHint = computed(() =>
   selectedRuns.value.length < 2
     ? 'Select at least two runs to compare'
@@ -130,13 +90,6 @@ function openRun(event: { data: RunRow; originalEvent: Event }): void {
           :title="compareHint"
           @click="emit('analyze', selectedRuns)"
       /></span>
-      <Button
-        label="Reload"
-        icon="pi pi-refresh"
-        class="reload-button"
-        :loading="loading"
-        @click="emit('refresh')"
-      />
     </div>
     <div class="summary">
       <span>Updated {{ updated }}</span>
@@ -149,19 +102,32 @@ function openRun(event: { data: RunRow; originalEvent: Event }): void {
         data-key="run_id"
         row-group-mode="subheader"
         group-rows-by="software_group_key"
+        sort-field="software_group_key"
+        :sort-order="1"
+        removable-sort
         expandable-row-groups
-        resizable-columns
-        column-resize-mode="fit"
         class="runs-grid"
-        :pt="{ rowGroupHeaderCell: { colspan: 7 } }"
-        table-style="min-width: 640px"
+        :pt="{ rowGroupHeaderCell: { colspan: 5 } }"
+        table-style="min-width: 760px"
         @row-click="openRun"
       >
         <Column selection-mode="multiple" header-style="width: 48px" />
-        <Column field="software_version" header="Software Version">
+        <Column
+          field="software_version"
+          header="Version"
+          sortable
+          header-class="version-column"
+          body-class="version-column"
+        >
           <template #body="slot">{{ slot.data.software_version || '—' }}</template>
         </Column>
-        <Column field="datePublished" header="Publish Date">
+        <Column
+          field="datePublished"
+          header="Publish Date"
+          sortable
+          header-class="publish-date-column"
+          body-class="publish-date-column"
+        >
           <template #body="slot">
             <span
               class="published-date"
@@ -171,51 +137,63 @@ function openRun(event: { data: RunRow; originalEvent: Event }): void {
             </span>
           </template>
         </Column>
-        <Column header="Source" header-style="width: 95px">
-          <template #body="slot">
-            <a
-              v-if="slot.data.branch_url"
-              class="grid-action source-action"
-              :href="slot.data.branch_url"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Open run GitHub repository"
-              aria-label="Open run GitHub repository"
-              @click.stop
-            >
-              <i class="fa-brands fa-github github-icon" aria-hidden="true"></i>
-            </a>
-          </template>
+        <Column
+          field="description"
+          header="Description"
+          sortable
+          header-class="description-column"
+          body-class="description-column"
+        >
+          <template #body="slot">{{ slot.data.description || '—' }}</template>
         </Column>
-        <Column header="RoHub" header-style="width: 95px">
+        <Column header-class="action-column" body-class="action-column">
           <template #body="slot">
-            <a
-              class="grid-action rohub-action"
-              :href="slot.data.run_id"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Open run in RoHub"
-              @click.stop
-            >
-              <img class="grid-action-icon" src="/assets/rohub.svg" alt="RoHub" />
-            </a>
-          </template>
-        </Column>
-        <Column header="Graph" header-style="width: 95px">
-          <template #body="slot">
-            <a
-              v-if="slot.data.graph"
-              class="grid-action graph-action"
-              :href="slot.data.graph"
-              target="_blank"
-              rel="noopener noreferrer"
-              :title="slot.data.graph"
-              aria-label="Open named graph"
-              @click.stop
-            >
-              <i class="pi pi-share-alt" aria-hidden="true"></i>
-            </a>
-            <span v-else>—</span>
+            <div class="grid-actions">
+              <GridActionLink
+                v-if="slot.data.branch_url"
+                class="source-action"
+                :href="slot.data.branch_url"
+                title="Open run GitHub repository"
+              >
+                <i class="fa-brands fa-github github-icon" aria-hidden="true"></i>
+              </GridActionLink>
+              <GridActionLink
+                class="rohub-action"
+                :href="slot.data.run_id"
+                title="Open run in RoHub"
+              >
+                <img class="grid-action-icon" src="/assets/rohub.svg" alt="" />
+              </GridActionLink>
+              <GridActionLink
+                v-if="slot.data.graph"
+                class="graph-action"
+                :href="slot.data.graph"
+                :title="`Open named graph: ${slot.data.graph}`"
+                aria-label="Open named graph"
+              >
+                <i class="pi pi-share-alt" aria-hidden="true"></i>
+              </GridActionLink>
+
+              <button
+                class="grid-icon-button"
+                type="button"
+                title="Open run dialog"
+                aria-label="Open run dialog"
+                @click.stop="emit('analyze', [slot.data])"
+              >
+                <i class="pi pi-chart-line" aria-hidden="true"></i>
+              </button>
+              <button
+                v-if="slot.data.has_tool_parameters"
+                class="grid-icon-button"
+                type="button"
+                title="View software parameters"
+                aria-label="View software parameters"
+                @click.stop="toolParametersDialog?.open(slot.data)"
+              >
+                <i class="pi pi-cog" aria-hidden="true"></i>
+              </button>
+            </div>
           </template>
         </Column>
         <template #groupheader="slot">
@@ -244,4 +222,5 @@ function openRun(event: { data: RunRow; originalEvent: Event }): void {
       </div>
     </div>
   </section>
+  <ToolParametersDialog ref="toolParametersDialog" />
 </template>

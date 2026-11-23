@@ -1,6 +1,7 @@
 export interface Benchmark {
   benchmark_url: string;
   benchmark_title: string;
+  description: string | null;
   research_problem_uri: string;
   version: string | null;
   repo: string | null;
@@ -9,6 +10,7 @@ export interface Benchmark {
 export interface Run {
   run_id: string;
   title: string | null;
+  description: string | null;
   benchmark_url: string;
   benchmark_title: string;
   version: string | null;
@@ -17,7 +19,15 @@ export interface Run {
   software_name: string | null;
   software_url: string | null;
   software_version: string | null;
+  has_tool_parameters: boolean;
   datePublished: string | null;
+}
+
+export interface ToolParameter {
+  name: string;
+  additional_type: string;
+  default_value: string;
+  description: string | null;
 }
 
 export interface BenchmarkMetadata {

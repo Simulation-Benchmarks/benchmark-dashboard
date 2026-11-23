@@ -13,18 +13,12 @@ import type { Univer } from '@univerjs/core';
 import type { FUniver } from '@univerjs/core/facade';
 import type { FWorksheet } from '@univerjs/sheets/facade';
 import type { IDisposable } from '@univerjs/core';
-import type { AnalysisRow, RunAnalysisData } from '../lib/analysis';
+import type { AnalysisRow, RunAnalysisData, SheetSnapshot } from '../lib/analysis';
 import type { ValueColumn } from '../lib/models';
 import { colors, dark } from '../lib/theme';
 import '@univerjs/preset-sheets-core/lib/index.css';
 import '@univerjs/preset-sheets-filter/lib/index.css';
 import '@univerjs/preset-sheets-sort/lib/index.css';
-
-export interface SheetSnapshot {
-  columns: ValueColumn[];
-  rows: AnalysisRow[];
-  visibleRows: AnalysisRow[];
-}
 
 const props = defineProps<{ data: RunAnalysisData }>();
 const emit = defineEmits<{ change: [snapshot: SheetSnapshot] }>();
@@ -176,6 +170,7 @@ function snapshot(): void {
     ...namedHeaders.keys(),
   );
   const values = sheet.getRange(0, 0, lastRow + 1, lastColumn + 1).getValues();
+  const dataRows = values.slice(1);
   const headerLabel = (index: number): string => namedHeaders.get(index) || `Column ${index + 1}`;
   const columns: ValueColumn[] = [];
   const usedColumns = sourceColumns.map((source, index) => ({
@@ -186,9 +181,7 @@ function snapshot(): void {
     const heading = namedHeaders.get(index);
     if (
       !heading &&
-      !values
-        .slice(1)
-        .some((row) => row[index] !== null && row[index] !== undefined && row[index] !== '')
+      !dataRows.some((row) => row[index] !== null && row[index] !== undefined && row[index] !== '')
     )
       continue;
     const column = {
@@ -200,9 +193,9 @@ function snapshot(): void {
     columns.push(column);
   }
   columns.unshift(
-    ...props.data.columns.map((column) => ({
+    ...props.data.columns.map((column, offset) => ({
       ...column,
-      label: headerLabel(sourceColumns.findIndex((source) => source.key === column.key)),
+      label: headerLabel(metadata.length + offset),
     })),
   );
   const headerLabels = usedColumns.map((column) => headerLabel(column.index));
@@ -248,7 +241,7 @@ function snapshot(): void {
     const content = JSON.stringify(
       usedColumns.map((column) => [
         headerLabel(column.index),
-        ...values.slice(1).map((row) => row[column.index]),
+        ...dataRows.map((row) => row[column.index]),
       ]),
     );
     if (content !== sizedContent) {
