@@ -14,7 +14,7 @@ from typing import Any
 
 from dotenv import load_dotenv
 
-from .queries import build_benchmarks_query, build_published_runs_query
+from semantic_benchmark.rohub import build_benchmarks_query, build_published_runs_query
 
 # Support a service-local .env file during development. Environment variables
 # supplied by the runtime (for example, Podman's --env-file) take precedence.

@@ -2,5 +2,5 @@ fastapi
 pandas
 python-dotenv
 rohub
-semantic-benchmark @ git+https://github.com/Simulation-Benchmarks/semantic-benchmark.git@41-adding-tool-specific-parameters
+semantic-benchmark~=0.6.1
 uvicorn[standard]
