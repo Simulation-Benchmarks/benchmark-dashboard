@@ -92,6 +92,9 @@ The UI communicates with the API through the Podman network using:
 
     service:9000
 
+The UI restarts with the API service so Nginx resolves the API container's
+current network address after an API restart.
+
 ## 5. Access the UI Through SSH Port Forwarding
 
 The UI is bound to 127.0.0.1:9060 on the server, so it is not directly exposed to the network.

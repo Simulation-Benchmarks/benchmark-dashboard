@@ -2,6 +2,7 @@
 Description=Semantic Benchmark Dashboard UI
 Requires=semantic-benchmark-service.service
 After=semantic-benchmark-service.service
+PartOf=semantic-benchmark-service.service
 
 [Container]
 Image=cr.tik.uni-stuttgart.de/izus-darus/semantic-benchmark/ui:latest
